@@ -4,6 +4,40 @@ Documentation, License etc.
 @package turtlesim
 '''
 
+
+class Range:
+  MAX_VALUE = 9999
+  def __init__(self, key, value):
+    self.value = value
+    
+    if type(key) == int:
+      # absolute
+      self.min = self.max = key
+    elif type(key) == str:
+      parts = key.split('..')
+      
+      if len(parts) != 2:
+        raise KeyError()
+      
+      if len(parts[0]) == 0:
+        self.min = 0
+      else:
+        self.min = int(parts[0])
+      
+      if len(parts[1]) == 0:
+        self.max = self.MAX_VALUE
+      else:
+        self.max = int(parts[1])
+  
+  def getMin(self):
+    return self.min
+  
+  def getMax(self):
+    return self.max
+  
+  def getValue(self):
+    return self.value
+  
 class goal:
   def __init__(self,yml):
     self.yml = yml
@@ -29,7 +63,7 @@ class goal:
       self.priority = int(yml['priority'])
     
     if yml.has_key('requires'):
-      if type(yml) == dict:
+      if type(yml['requires']) == dict:
         req = yml['requires']
         
         if req.has_key('goals'):
