@@ -1,0 +1,85 @@
+
+goal:
+  id: first-settlement
+  requires:
+    structures:
+      1: mining
+
+building:
+  id: settlement
+  schematic: settlement_1.schematic
+  size: 16x16
+  type: building.settlement
+  annotations:
+    chest:
+      pos: 7 7 1
+      
+---
+
+goal:
+  id: unique string
+  priority: number priority, lower is more important, must be >0
+  requires:
+    goals:
+      - List of goals
+    actions:
+      - List of actions
+    any:
+      quantity: building|unit|variable
+      min-num: building|unit|variable
+      max-num: building|unit|variable
+      a-b: building|unit|variable
+    free:
+      ...
+    idle:
+      ...
+  triggers:
+    - list of goals to add once this is completed
+
+building:
+  id: unique string
+  schematic: filename
+  size: nxn (n is multiple of 8)
+  type: building type
+  annotations:
+    unique-name:
+      pos: x y z
+      type: position usage type
+      metadata:
+        key: values
+  provides:
+    - list of variables|units this provides
+  next: name of building upgrade name
+  prev: name of building downgrade name
+  
+---
+
+building types:
+  - building.gatherer
+  - building.builder
+  - building.wall
+  - building.cosmetic
+  - building.path
+  - building.settlement
+
+actions:
+  - action.build - If the unit has the needed blocks, builds. If it doesn't and has no free inventory, will 1) removve 1 slot and 2) get the needed material.
+  - action.discover
+  - action.unitmove
+  - action.destroy
+  - action.mine
+  - action.find_settlement
+  - action.explore
+  - action.pathfind
+  - action.produce
+  - action.plant
+  - action.chop
+  - action.harvest
+  - action.say
+  - action.deliver
+
+position types:
+  - position.chest
+  - position.crafter # Crafts things, stores output internally
+  - position.storage # Turtle that inteligently stores items to retrieval
+  - position.home # A possible home position that worker turtles can park at.  Not a fixed assignment, they just need to be available. Pathing could be a problem here.

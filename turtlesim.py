@@ -1,0 +1,93 @@
+'''
+Documentation, License etc.
+
+@package turtlesim
+'''
+
+class goal:
+  def __init__(self,yml):
+    self.yml = yml
+    self.goals = []
+    self.actions = []
+    self.any = []
+    self.free = []
+    self.idle = []
+    self.triggers = []
+    
+    # Check if yaml is map
+    if type(yml) != dict:
+      raise AttributeError()
+    
+    if not yml.has_key('id'):
+      raise AttributeError()
+    else:
+      self.id = yml['id']
+    
+    if not yml.has_key('priority'):
+      self.priority = 5
+    else:
+      self.priority = int(yml['priority'])
+    
+    if yml.has_key('requires'):
+      if type(yml) == dict:
+        req = yml['requires']
+        
+        if req.has_key('goals'):
+          self.goals = req['goals']
+        if req.has_key('actions'):
+          self.actions = req['actions']
+        if req.has_key('any'):
+          self.any = self.processRangeMap(req['any'])
+        if req.has_key('free'):
+          self.free = self.processRangeMap(req['any'])
+        if req.has_key('idle'):
+          self.idle = self.processRangeMap(req['idle'])
+          
+    if yml.has_key('triggers'):
+      self.triggers = yml['triggers']
+    
+    # Validate variables
+
+class building_annotation:
+  def __init__(self,yml):
+    self.yml = yml
+    self.pos = [0,0,0]
+    self.type = None
+    self.metadata = dict()
+    
+    if yml.has_key('pos'):
+      self.pos = [int(x) for x in yml['pos'].split(' ')]
+    if yml.has_key('type'):
+      self.type = yml['type']
+    if yml.has_key('metadata') and type(yml['metadata']) == dict:
+      self.metadata = yml['metadata']
+      
+class building:
+  def __init__(self,yml):
+    self.yml = yml
+    
+    if type(yml) != dict:
+      raise AttributeError()
+    
+    if not yml.has_key('id'):
+      raise AttributeError()
+    else:
+      self.id = yml['id']
+    
+    if yml.has_key('schematic'):
+      self.schematic = yml['schematic']
+    if yml.has_key('size'):
+      self.size = [int(x) for x in yml['size'].split('x')]
+    if yml.has_key('type'):
+      self.type = yml['type']
+    if yml.has_key('annotations') and type(yml['annotations']) == dict:
+      ann = yml['annotations']
+      
+      self.annotations = [building_annotation(a) for a in ann]
+    if yml.has_key('provides'):
+      self.provides = yml['provides']
+    if yml.has_key('next'):
+      self.next = yml['next']
+    if yml.has_key('prev'):
+      self.prev = yml['prev']
+    
