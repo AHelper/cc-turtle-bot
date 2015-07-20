@@ -91,3 +91,11 @@ class building:
     if yml.has_key('prev'):
       self.prev = yml['prev']
     
+class unit:
+  def __init__(self, yml):
+    self.yml = yml
+    
+    if type(yml) != dict:
+      raise AttributeError()
+    
+    

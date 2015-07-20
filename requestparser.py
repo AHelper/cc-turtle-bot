@@ -18,18 +18,23 @@ class RequestValidator:
     for route in routes:
       self.routes[route[1]] = route[0]
     
-  def __validate(self, template, json):
+  def __validate(self, template, json,path="/"):
     for key, value in template.iteritems():
       if key not in json:
+        print("Key '{}' missing at {}".format(key, path))
         return False
       else:
         if type(value) == type:
           if type(json[key]) != value:
+            print("{}/{} is not of type {}, found {}".format(path,key,value.__name__, type(json[key])))
             return False
         elif type(value) == tuple:
           for t in value:
-            if type(json[key]) != t:
-              return False
+            if type(json[key]) == t:
+              break
+          else:
+            print("{}/{} is not any type required".format(path,key))
+            return False
         elif type(value) == dict:
           if type(json[key]) != dict:
             return False

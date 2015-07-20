@@ -52,6 +52,9 @@ building:
   next: name of building upgrade name
   prev: name of building downgrade name
   
+unit:
+  id: unique string
+  
 ---
 
 building types:

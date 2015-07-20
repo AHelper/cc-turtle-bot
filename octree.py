@@ -43,6 +43,13 @@ class octree:
     
     d = ptrs[m]
     
+    if m & 0b001:
+      lx += h
+    if m & 0b010:
+      ly += h
+    if m & 0b100:
+      lz += h
+      
     if type(d) == list:
       self.__setPoint(x,y,z,v,d,lx,ly,lz,s/2)
     elif s != 2:
@@ -64,6 +71,13 @@ class octree:
     
     d = ptrs[m]
     
+    if m & 0b001:
+      lx += h
+    if m & 0b010:
+      ly += h
+    if m & 0b100:
+      lz += h
+      
     print(m,type(d),lx,ly,lz,s,h)
     if type(d) == list:
       return self.__getPoint(x,y,z,d,lx,ly,lz,s/2)
