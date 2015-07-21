@@ -1,0 +1,1 @@
+f=io.open("/startup","w") f:write(http.get("http://localhost:34299/static/boot2"):readAll()) os.reboot()

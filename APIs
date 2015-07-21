@@ -1,0 +1,48 @@
+/turtle/(.*)/getAction  Gets the action it should perform
+  {
+    "action":STR,
+    "data":OBJ
+  }
+/turtle/(.*)/success  Current action succeeded. Causes a think step
+  GET
+/turtle/(.*)/failure  Current action failed.  Causes a think step
+  GET
+/turtle/(.*)/setInventory  Update inventory slot(s)
+  [
+    {
+      "slot":INT,
+      "num":INT,
+      "type":INT,
+      "damage":INT
+    }
+  ]
+/turtle/(.*)/getInventory  Gets the inventory of a turtle
+  GET
+  SAME AS ABOVE
+/turtle/(.*)/getPosition  Gets the position of a turtle
+  SEE SIMILAR HANDLERS
+/logging/(.*)/(.*)  Logs an event (body is text) for turtle \1 with level \2
+/building/(.*)/setTurtle  Adds a turtle to a building by id \1
+  {
+    "id":STR turtle id,
+    "pos":INT position
+  }
+/building/(.*)/getTurtles  Gets a list of all contained turtles
+  [
+    STR turtle id
+  ]
+/turtle/(.*)/setRole  Sets the role of a turtle.
+  STR role
+/turtle/(.*)/getRole  Gets the role of a turtle.
+  STR role
+/pathing/findNearestBlock  Finds the nearest block
+  {
+    "x":INT,
+    "y":INT,
+    "z":INT,
+    "search": {
+      "value":INT,
+      "damage":INT optional
+    }
+  }
+/

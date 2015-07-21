@@ -1,0 +1,28 @@
+function fail()
+  # Sleep for 10 seconds
+  os.reboot()
+end
+  
+url = "http://localhost:34299/"
+# Download filelist
+h = http.get(url.."listing")
+# For line in h do
+  hnd = http.get(url.."static/"..line)
+  
+  if hnd == nil then
+    fail()
+  end
+  # TODO: Strip the .lua off of the files
+  f = io.open(line,"w")
+  f:write(hnd:readAll())
+  f:close()
+end
+
+h = http.get(url.."startup")
+
+if h == nil then
+  fail()
+end
+
+# TODO: exec?
+os.exec(h:readAll())
