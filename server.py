@@ -79,6 +79,10 @@ class PathingQueryHandler(JSONHandler):
     
     self.write_json({"type":"success","value":sys.pathing.get(int(req["x"]), int(req["y"]), int(req["z"]))})
     
+class PathingSearchHandler(JSONHandler):
+  def post(self):
+    req = self.read_json()
+    if not validator.validate(PathingSearchHandler, req)
 class RegisterTurtleHandler(JSONHandler):
   def post(self):
     req = self.read_json()

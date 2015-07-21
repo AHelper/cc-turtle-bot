@@ -30,7 +30,7 @@ class Pathing:
     return o.getPoint(x,y,z)
   
   # Need A* algorithm with an eliminator function
-  def __pathSearch(self, nodes, walls, start, end):
+  def pathSearch(self, start, end):
     #for index, node in enumerate(nodes):
       #if type(start) == tuple and node[0] == start[0] and node[1] == start[1]:
         #start = index
@@ -42,38 +42,70 @@ class Pathing:
     nodes = {}
     
     # Parent, score
-    nodes[start] = (None)
-    nodes[end] = (None)
+    #nodes[start] = (None)
+    #nodes[end] = (None)
     
     openSet = []
     closedSet = []
     
-    # A* Vertex Updater
-    def updateVertex(current, next, start, end, walls, open):
-      #print('{} < {}'.format(current[3] + c(current, next), next[3]))
-      # if g(s) + c(s, s`) < g(s)
-      if current[3] + c(current, next) < next[3]:
-        next[3] = current[3] + c(current, next)
-        next[4] = current
+    ## A* Vertex Updater
+    #def updateVertex(current, next, start, end, walls, open):
+      ##print('{} < {}'.format(current[3] + c(current, next), next[3]))
+      ## if g(s) + c(s, s`) < g(s)
+      #if current[3] + c(current, next) < next[3]:
+        #next[3] = current[3] + c(current, next)
+        #next[4] = current
         
-        if next not in open:
-          open.append(next)
-        open.sort(key=lambda node: node[3] + c(node,end), reverse=True)
+        #if next not in open:
+          #open.append(next)
+        #open.sort(key=lambda node: node[3] + c(node,end), reverse=True)
       
     def c(n1, n2):
-      return math.sqrt((n1[0]-n2[0])*(n1[0]-n2[0])+(n1[1]-n2[1])*(n1[1]-n2[1]))
+      return math.sqrt((n1.x-n2.x)*(n1.x-n2.x)+(n1.y-n2.y)*(n1.y-n2.y)+(n1.z-n2.z)*(n1.z-n2.z))
     
     def h(n):
       return c(n, nodes[end])
     
-    class NodeScorePair:
-      def __init__(self,ref,parent):
-        self.ref = ref
-        self.score = parent.score + h(ref,parent)
+    class Node:
+      def __init__(self,xyz,parent,super):
+        self.xyz = xyz
+        self.x, self.y, self.z = xyz
+        self.parent = parent
+        if parent == end:
+          self.score = 0
+        #elif parent != None:
+          #self.score = parent.score + h(self.parent)
+        else:
+          self.score = h(self)
+        self.super = super
+        self.value = super.get(*xyz)
       def __lt__(self, other):
-        return other.score < self.score
-    
-    nodes[start][3] = h(nodes[start])
+        return other.score >= self.score
+      def neighbors(self):
+        # Get 6 neighbors by xyz tuple
+        nl = [
+          (self.x, self.y, self.z+1),
+          (self.x, self.y, self.z-1),
+          (self.x, self.y+1, self.z),
+          (self.x, self.y-1, self.z),
+          (self.x+1, self.y, self.z),
+          (self.x-1, self.y, self.z),
+        ]
+        
+        ret = []
+        
+        for n in nl:
+          if n not in nodes:
+            nodes[n] = Node(n, self, self.super)
+            
+          if nodes[n].value == 0 or nodes[n].value == None:
+            ret.append(nodes[n])
+            
+        return ret
+        
+    #nodes[start][3] = h(nodes[start])
+    nodes[end] = Node(end, end, self)
+    nodes[start] = Node(start, None, self)
     openSet.append(nodes[start])
     step = 0
     
@@ -82,27 +114,36 @@ class Pathing:
       node = openSet.pop()
       
       step += 1
-      
-      if node== nodes[end]:
+      if node == nodes[end]:
         print("Found path")
         break
       else:
         closedSet.append(node)
-        for neighbor in node[2]:
+        for neighbor in node.neighbors():
           if neighbor not in closedSet:
             if neighbor not in openSet:
-              neighbor[3] = float('inf')
-              neighbor[4] = None
-            updateVertex(node, neighbor, nodes[start], nodes[end], walls, openSet)
-
-  # A* Vertex Updater
-  def astarUpdate(current, next, start, end, walls, open):
-    #print('{} < {}'.format(current[3] + c(current, next), next[3]))
-    # if g(s) + c(s, s`) < g(s)
-    if current[3] + c(current, next) < next[3]:
-      next[3] = current[3] + c(current, next)
-      next[4] = current
+              neighbor.parent = node
+              openSet.append(neighbor)
+              openSet.sort(reverse=True)
+            #updateVertex(node, neighbor, nodes[start], nodes[end], walls, openSet)
+    else:
+      return None
+    
+    # Walk back
+    ret = []
+    while node != None:
+      ret.append(node.xyz)
+      node = node.parent
+    ret.reverse()
+    return ret
+  ## A* Vertex Updater
+  #def astarUpdate(current, next, start, end, walls, open):
+    ##print('{} < {}'.format(current[3] + c(current, next), next[3]))
+    ## if g(s) + c(s, s`) < g(s)
+    #if current[3] + c(current, next) < next[3]:
+      #next[3] = current[3] + c(current, next)
+      #next[4] = current
       
-      if next not in open:
-        open.append(next)
-      open.sort(key=lambda node: node[3] + c(node,end), reverse=True)
+      #if next not in open:
+        #open.append(next)
+      #open.sort(key=lambda node: node[3] + c(node,end), reverse=True)

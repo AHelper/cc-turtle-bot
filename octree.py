@@ -3,12 +3,14 @@ import struct
 class octree:
   def __init__(self,s):
     self.s = s
-    self.ptrarray = [0,0,0,0,0,0,0,0]
+    self.ptrarray = [None,None,None,None,None,None,None,None]
   
   def dumpPtrs(self,out,ptrs):
     for d in ptrs:
       if type(d) == list:
         i = 0xFF
+      elif d == None:
+        i = 0xFE
       else:
         i = d
       out.write(struct.pack('B',i))
@@ -78,7 +80,7 @@ class octree:
     if m & 0b100:
       lz += h
       
-    print(m,type(d),lx,ly,lz,s,h)
+    #print(m,type(d),lx,ly,lz,s,h)
     if type(d) == list:
       return self.__getPoint(x,y,z,d,lx,ly,lz,s/2)
     else:
