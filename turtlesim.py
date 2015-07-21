@@ -132,4 +132,7 @@ class unit:
     if type(yml) != dict:
       raise AttributeError()
     
-    
+class action:
+  def __init__(self, id, args):
+    self.id = id
+    self.args = args
