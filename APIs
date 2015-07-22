@@ -45,4 +45,9 @@
       "damage":INT optional
     }
   }
-/
+  --
+  {
+    "type":SF,
+    "nearest":XYZ array
+  }
+/pathing

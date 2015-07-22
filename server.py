@@ -11,6 +11,9 @@ import tornado.ioloop
 import tornado.web
 from tornado.web import HTTPError
 
+from glob import glob
+import os
+
 import pathing
 from requestparser import RequestValidator
 from turtle import Turtle
@@ -54,7 +57,7 @@ class JSONHandler(tornado.web.RequestHandler):
 class JSONErrorHandler(tornado.web.ErrorHandler, JSONHandler):
   pass
 
-class PathingGetHandler(JSONHandler):
+class PathingQueryHandler(JSONHandler):
   def post(self):
     req = self.read_json()
     if type(req) == dict:
@@ -63,7 +66,12 @@ class PathingGetHandler(JSONHandler):
     else:
       raise tornado.web.HTTPError(400)
     
-    self.write_json({"response":"not_implemented","message":"Pathing module not implemented"})
+    path = sys.pathing.pathSearch((int(req["source"]["x"]), int(req["source"]["y"]), int(req["source"]["z"])), (int(req["destination"]["x"]), int(req["destination"]["y"]), int(req["destination"]["z"])))
+    
+    if not path:
+      self.write_json({"type":"failure","message":"Path not found"})
+    else:
+      self.write_json({"type":"success","path":path})
 
 class PathingSetHandler(JSONHandler):
   def post(self):
@@ -73,37 +81,29 @@ class PathingSetHandler(JSONHandler):
     
     self.write_json({"response":"success","message":"point set"})
 
-class PathingQueryHandler(JSONHandler):
+class PathingGetHandler(JSONHandler):
   def post(self):
     req = self.read_json()
     
     self.write_json({"type":"success","value":sys.pathing.get(int(req["x"]), int(req["y"]), int(req["z"]))})
     
-class PathingSearchHandler(JSONHandler):
-  def post(self):
-    req = self.read_json()
-    if not validator.validate(PathingSearchHandler, req)
 class RegisterTurtleHandler(JSONHandler):
-  def post(self):
+  def post(self, name):
     req = self.read_json()
     if not validator.validate(RegisterTurtleHandler, req):
       print("Failed to validate")
       raise HTTPError(400)
     
-    if not sys.hasTurtle(req['name']):
-      sys.addTurtle(Turtle(req['name'], req['x'], req['y'], req['z'], req['facing']))
+    if not sys.hasTurtle(name):
+      sys.addTurtle(Turtle(name, req['x'], req['y'], req['z'], req['facing']))
       self.write_json({"type":"success"})
     else:
       self.write_json({"type":"failure","message":"turtle alread exists"})
       
 class UnregisterTurtleHandler(JSONHandler):
-  def post(self):
-    req = self.read_json()
-    if not validator.validate(RegisterTurtleHandler, req):
-      raise HTTPError(400)
-    
-    if not sys.hasTurtle(req['name']):
-      sys.addTurtle(Turtle(req['name'], req['x'], req['y'], req['z'], req['facing']))
+  def post(self, name):    
+    if not sys.hasTurtle(name):
+      sys.delTurtle(name)
       self.write_json({"type":"success"})
     else:
       self.write_json({"type":"failure","message":"turtle alread exists"})
@@ -115,6 +115,18 @@ class TurtleStatusHandler(JSONHandler):
     else:
       self.write_json({"type":"success","current":sys.getTurtle(turtle_name).getHumanReadableCurrentTask(),"future":sys.getTurtle(turtle_name).getHumanReadableFutureTasks()})
 
+class ListingHandler(JSONHandler):
+  def get(self):
+    os.chdir('static')
+    list = glob('*.lua')
+    os.chdir('..')
+    
+    self.write("\n".join(list))
+    
+class StartupHandler(JSONHandler):
+  def get(self):
+    self.write("core")
+    
 settings = {
   'default_handler_class': JSONErrorHandler,
   'default_handler_args': dict(status_code=404)
@@ -124,15 +136,17 @@ routes = [
   (r"/pathing/get", PathingGetHandler),
   (r"/pathing/set", PathingSetHandler),
   (r"/pathing/query", PathingQueryHandler),
-  (r"/turtles/add", RegisterTurtleHandler),
-  (r"/turtles/del", UnregisterTurtleHandler),
-  (r"/turtles/status/(.*)", TurtleStatusHandler),
+  (r"/turtles/([^/]+)/register", RegisterTurtleHandler),
+  (r"/turtles/([^/]+)/unregister", UnregisterTurtleHandler),
+  (r"/turtles/([^/]+)/status", TurtleStatusHandler),
   (r"/resthelp", HelpHandler),
+  (r"/listing",ListingHandler),
+  (r"/startup",StartupHandler),
   (r"/static/(.*)", tornado.web.StaticFileHandler, {'path': 'static'})
 ]
 
 validator.setup({
-  PathingGetHandler: {
+  PathingQueryHandler: {
     "source": {
       "x":(int,float),
       "y":(int,float),
@@ -150,20 +164,22 @@ validator.setup({
     "z":(int,float),
     "value":(int)
   },
-  PathingQueryHandler: {
+  PathingGetHandler: {
     "x":(int,float),
     "y":(int,float),
     "z":(int,float)
   },
   RegisterTurtleHandler: {
-    "name": unicode,
     "x":(int,float),
     "y":(int,float),
     "z":(int,float),
     "facing":int,
   },
   UnregisterTurtleHandler: {
-    "name":unicode
+  },
+  TurtleStatusHandler: { 
+  },
+  ListingHandler: {
   }
 }, routes)
 app = tornado.web.Application(routes, **settings)

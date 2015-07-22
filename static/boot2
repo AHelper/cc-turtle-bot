@@ -1,19 +1,37 @@
+print("boot2")
+
 function fail()
-  # Sleep for 10 seconds
+  -- Sleep for 10 seconds
+  os.sleep(10)
   os.reboot()
 end
   
 url = "http://localhost:34299/"
-# Download filelist
+-- Download filelist
 h = http.get(url.."listing")
-# For line in h do
+-- For line in h do
+
+if h == nil then
+  print("Couldn't get listing")
+  fail()
+end
+
+while true do
+  line = h:readLine()
+  if line == nil then 
+    h:close()
+    break 
+  end
+  
   hnd = http.get(url.."static/"..line)
   
   if hnd == nil then
+    print("Couldn't get a needed file")
+    print(url.."static/"..line)
     fail()
   end
-  # TODO: Strip the .lua off of the files
-  f = io.open(line,"w")
+  -- TODO: Strip the .lua off of the files
+  f = io.open(line:sub(0,-5),"w")
   f:write(hnd:readAll())
   f:close()
 end
@@ -21,8 +39,26 @@ end
 h = http.get(url.."startup")
 
 if h == nil then
+  print("Can't get startup")
   fail()
 end
 
-# TODO: exec?
-os.exec(h:readAll())
+start = h:readAll()
+h:close()
+
+-- print(shell)
+-- print(shell.getRunningProgram())
+-- if shell.getRunningProgram() ~= "startup" and fs.exists("/startup") then
+--   fs.delete("/startup")
+--   fs.copy(shell.getRunningProgram(), "/startup")
+-- end
+
+-- TODO: exec?
+if pcall(shell.run(start)) then
+  os.reboot()
+  print("Payload exited cleanly")
+  fail()
+else
+  print("Exception caught in payload")
+  fail()
+end
