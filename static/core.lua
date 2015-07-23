@@ -24,14 +24,34 @@ if h1 == nil then
   log.debug("Attempting to register new turtle")
   h2 = rest.post("turtle/"..id.."/register",
     {
-      "x":0,
-      "y":0,
-      "z":0,
-      "facing":0
+      x=0,
+      y=0,
+      z=0,
+      facing=0
     })
   if h2 ~= nil then
     log.info("New turtle "..id.." registered")
+    h2:close()
   end
-else
+  else
+  -- Load pos from file
+  m.loadPos()
+  -- Get pos from server
+  h2 = rest.get("turtle/"..id.."/getPosition")
   
+  if h2 ~= nil then
+    j = textutils.deserialize(h2:readAll())
+    h2:close()
+    
+    if j.x ~= m.x or j.y ~= m.y or j.z ~= m.z or j.facing ~= m.facing then
+      h2 = rest.post("turtle/"..id.."/setPosition", {
+        x=m.x,
+        y=m.y,
+        z=m.z,
+        facing=m.facing
+      })
+    end
+  else
+    log.error("Failed to get position")
+  end
 end
