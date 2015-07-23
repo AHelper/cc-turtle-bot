@@ -44,14 +44,19 @@ if h1 == nil then
     h2:close()
     
     if j.x ~= m.x or j.y ~= m.y or j.z ~= m.z or j.facing ~= m.facing then
+      log.notice("Our position is newer than the server's")
       h2 = rest.post("turtle/"..id.."/setPosition", {
         x=m.x,
         y=m.y,
         z=m.z,
         facing=m.facing
       })
+      h2:close()
     end
   else
     log.error("Failed to get position")
   end
 end
+
+log.debug("Done!")
+os.sleep(10)

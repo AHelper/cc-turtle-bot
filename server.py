@@ -6,13 +6,16 @@ Documentation, License etc.
 @package turtle
 '''
 
+import tornado
 import tornado.escape
 import tornado.ioloop
 import tornado.web
+import tornado.log
 from tornado.web import HTTPError
 
 from glob import glob
 import os
+import logging
 
 import pathing
 from requestparser import RequestValidator
@@ -127,9 +130,25 @@ class StartupHandler(JSONHandler):
   def get(self):
     self.write("core")
     
+class LoggingHandler(JSONHandler):
+  def post(self, id, level):
+    level = int(level)
+    tornado.log.app_log.setLevel(logging.DEBUG)
+    if level <= 2:
+      tornado.log.app_log.critical("{}: {}".format(id,self.request.body))
+    elif level == 3:
+      tornado.log.app_log.error("{}: {}".format(id,self.request.body))
+    elif level == 4:
+      tornado.log.app_log.warning("{}: {}".format(id,self.request.body))
+    elif level == 5 or level == 6:
+      tornado.log.app_log.info("{}: {}".format(id,self.request.body))
+    elif level == 7:
+      tornado.log.app_log.debug("{}: {}".format(id,self.request.body))
+      
 settings = {
   'default_handler_class': JSONErrorHandler,
-  'default_handler_args': dict(status_code=404)
+  'default_handler_args': dict(status_code=404),
+  'debug': True
 }
 
 routes = [
@@ -139,6 +158,7 @@ routes = [
   (r"/turtles/([^/]+)/register", RegisterTurtleHandler),
   (r"/turtles/([^/]+)/unregister", UnregisterTurtleHandler),
   (r"/turtles/([^/]+)/status", TurtleStatusHandler),
+  (r"/logging/([^/]+)/(.*)", LoggingHandler),
   (r"/resthelp", HelpHandler),
   (r"/listing",ListingHandler),
   (r"/startup",StartupHandler),

@@ -21,6 +21,10 @@
   SAME AS ABOVE
 /turtle/(.*)/getPosition  Gets the position of a turtle
   SEE SIMILAR HANDLERS
+/turtle/(.*)/setState  Sets the state of the turtle
+  {
+    "state":STR
+  }
 /logging/(.*)/(.*)  Logs an event (body is text) for turtle \1 with level \2
 /building/(.*)/setTurtle  Adds a turtle to a building by id \1
   {
