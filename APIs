@@ -54,4 +54,9 @@
     "type":SF,
     "nearest":XYZ array
   }
-/pathing
+/pathing/setObsticle  Sets a mob or other non-block obsticle that prevents moving to
+  {
+    "x":INT,
+    "y":INT,
+    "z":INT
+  }
