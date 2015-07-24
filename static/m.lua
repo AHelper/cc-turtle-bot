@@ -1,9 +1,9 @@
 os.loadAPI("rest")
 
-x = 0
-y = 0
-z = 0
-facing = 1
+local _x = 0
+local _y = 0
+local _z = 0
+local _facing = 1
 
 OK = 0
 BLOCK = 1
@@ -20,7 +20,7 @@ local useError = false
 
 local function sendPos()
   r=rest.post("turtle/"..config.id.."/position",{
-    x=x,y=y,z=z,facing=facing
+    x=_x,y=_y,z=_z,facing=_facing
   })
   if r ~= nil then
     r:close()
@@ -29,25 +29,54 @@ local function sendPos()
   end
 end
 
+function x()
+  return _x
+end
+
+function y()
+  return _y
+end
+
+function z()
+  return _z
+end
+
+function facing()
+  return _facing
+end
+
 function save()
   f=io.open('m_cache','w')
   f:write(textutils.serialize({
-    x=x,y=y,z=z,facing=facing
+    x=_x,y=_y,z=_z,facing=_facing
   }))
   f:close()
 end
 
 function load()
   f=io.open('m_cache','r')
+  local ok = false
   if f then
-    t=textutils.unserialize(f:read())
-    f:close()
-    x=t.x
-    y=t.y
-    z=t.z
-    facing=t.facing
+    e,s = pcall(function()
+      r=f:read('*a')
+      t=textutils.unserialize(r)
+      f:close()
+      _x=t.x
+      _y=t.y
+      _z=t.z
+      _facing=t.facing
+    end)
+    if e then
+      ok = true
+    end
   end
-  sendPos()
+  if ok then
+    sendPos()
+  else
+    log.error("m_cache is invalid, I am lost :(")
+    error("Lost")
+    -- TODO: Have it say that it is lost.  If another turtle can find it, it can verify the location. Else, disable until found
+  end
 end
 
 function setError(err)
@@ -82,16 +111,16 @@ function sendObsticle(x,y,z)
 end
 
 local function getLinearMovementPos(v)
-  if facing == 1 then
-    return x, y, z + v
-  elseif facing == 2 then
-    return x + v, y, z
-  elseif facing == 3 then
-    return x, y, z - v
-  elseif facing == 4 then
-    return x - v, y, z
+  if _facing == 1 then
+    return _x, _y, _z + v
+  elseif _facing == 2 then
+    return _x + v, _y, _z
+  elseif _facing == 3 then
+    return _x, _y, _z - v
+  elseif _facing == 4 then
+    return _x - v, _y, _z
   else
-    log.error("getLinearMovementPos: bad facing " .. tostring(facing))
+    log.error("getLinearMovementPos: bad facing " .. tostring(_facing))
   end
 end
 
@@ -118,20 +147,20 @@ function up(times)
   while times ~= 0 do
     ret = _up()
     if ret == OK then
-      y = y + 1
+      _y = _y + 1
       save()
-      send()
+      sendPos()
     elseif ret == BLOCK then
       local s,d = turtle.inspectUp()
       if s then
-        sendBlock(x,y+1,z,d.name)
+        sendBlock(_x,_y+1,_z,d.name)
       end
       if useError then
         error("up:BLOCK")
         return BLOCK
       end
     elseif ret == MOB then
-      sendObsticle(x,y+1,z)
+      sendObsticle(_x,_y+1,_z)
       if useError then
         error("up:MOB")
       else
@@ -166,13 +195,13 @@ function down()
   while times ~= 0 do
     ret = _down()
     if ret == OK then
-      y = y - 1
+      _y = _y - 1
       save()
-      send()
+      sendPos()
     elseif ret == BLOCK then
       local s,d = turtle.inspectDown()
       if s then
-        sendBlock(x,y-1,z,d.name)
+        sendBlock(_x,_y-1,_z,d.name)
       end
       if useError then
         error("down:BLOCK")
@@ -180,7 +209,7 @@ function down()
         return BLOCK
       end
     elseif ret == MOB then
-      sendObsticle(x,y-1,z)
+      sendObsticle(_x,_y-1,_z)
       if useError then
         error("down:MOB")
       else
@@ -215,9 +244,9 @@ function forward(times)
   while times ~= 0 do
     ret = _forward()
     if ret == OK then
-      x, y, z = getLinearMovementPos(1)
+      _x, _y, _z = getLinearMovementPos(1)
       save()
-      send()
+      sendPos()
     elseif ret == BLOCK then
       local s,d = turtle.inspect()
       if s then
@@ -263,9 +292,9 @@ function back(times)
   while times ~= 0 do
     ret = _back()
     if ret == OK then
-      x, y, z = getLinearMovementPos(-1)
+      _x, _y, _z = getLinearMovementPos(-1)
       save()
-      send()
+      sendPos()
     elseif ret == BLOCK then
       local s,d = turtle.inspectDown()
       if s then
@@ -292,24 +321,21 @@ end
 
 function left()
   turtle.turnLeft()
-  if facing ~= 1 then
-    facing = facing - 1
+  if _facing ~= 1 then
+    _facing = _facing - 1
   else
-    facing = 4
+    _facing = 4
   end
-  print(facing)
   save()
-  print(facing)
   sendPos()
-  print(facing)
 end
 
 function right()
   turtle.turnRight()
-  if facing ~= 4 then
-    facing = facing + 1
+  if _facing ~= 4 then
+    _facing = _facing + 1
   else
-    facing = 1
+    _facing = 1
   end
   save()
   sendPos()

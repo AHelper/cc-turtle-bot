@@ -1,1 +1,1 @@
-print("boot1") if shell.getRunningProgram() ~= "startup" then fs.delete("/startup") fs.copy(shell.getRunningProgram(), "/startup") end f=io.open("/boot2","w") f:write(http.get("http://localhost:34299/static/boot2"):readAll()) f:close() shell.run("/boot2")
+print("boot1") if shell.getRunningProgram() ~= "startup" then fs.delete("/startup") fs.copy(shell.getRunningProgram(), "/startup") end f=io.open("/boot2","w") h=http.get("http://localhost:34299/static/boot2") if not h then error("Server down!") end f:write(h:readAll()) f:close() h:close() shell.run("/boot2")

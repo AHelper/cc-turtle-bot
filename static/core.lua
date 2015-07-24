@@ -31,6 +31,7 @@ if h1 == nil then
   if h2 ~= nil then
     log.info("New turtle "..config.id.." registered")
     h2:close()
+    m.save()
   else
     log.critical("Can't make new turtle!")
   end
@@ -44,13 +45,13 @@ else
     j = textutils.unserialize(h2:readAll())
     h2:close()
     
-    if j.x ~= m.x or j.y ~= m.y or j.z ~= m.z or j.facing ~= m.facing then
+    if j.x ~= m.x() or j.y ~= m.y() or j.z ~= m.z() or j.facing ~= m.facing() then
       log.notice("Our position is newer than the server's")
       h2 = rest.post("turtle/"..config.id.."/position", {
-        x=m.x,
-        y=m.y,
-        z=m.z,
-        facing=m.facing
+        x=m.x(),
+        y=m.y(),
+        z=m.z(),
+        facing=m.facing()
       })
       h2:close()
     end
