@@ -3,7 +3,7 @@ os.loadAPI("rest")
 x = 0
 y = 0
 z = 0
-facing = 
+facing = 1
 
 OK = 0
 BLOCK = 1
@@ -18,30 +18,6 @@ RIGHT = 5
 
 local useError = false
 
-function save()
-  f=io.open('m_cache','w')
-  f:write(textutils.serialize({
-    x=x,y=y,z=z,facing=facing
-  })
-  f:close()
-end
-
-function load()
-  f=io.open('m_cache','r')
-  t=textutils.deserialize(f:readAll())
-  f:close()
-  x=t.x
-  y=t.y
-  z=t.z
-  facing=t.facing
-  
-  sendPos()
-end
-
-function setError(err)
-  useError = err
-end
-
 local function sendPos()
   r=rest.post("turtle/"..config.id.."/setPosition",{
     x=x,y=y,z=z,facing=facing
@@ -51,6 +27,31 @@ local function sendPos()
   else
     log.error("sendPos: Failed to setPosition")
   end
+end
+
+function save()
+  f=io.open('m_cache','w')
+  f:write(textutils.serialize({
+    x=x,y=y,z=z,facing=facing
+  }))
+  f:close()
+end
+
+function load()
+  f=io.open('m_cache','r')
+  if f then
+    t=textutils.unserialize(f:read())
+    f:close()
+    x=t.x
+    y=t.y
+    z=t.z
+    facing=t.facing
+  end
+  sendPos()
+end
+
+function setError(err)
+  useError = err
 end
 
 function sendBlock(x,y,z,b)
@@ -81,13 +82,13 @@ function sendObsticle(x,y,z)
 end
 
 local function getLinearMovementPos(v)
-  if facing == 0 then
+  if facing == 1 then
     return x, y, z + v
-  else if facing == 1 then
+  elseif --[[facing]] == 2 then
     return x + v, y, z
-  else if facing == 2 then
+  elseif facing == 3 then
     return x, y, z - v
-  else if facing == 3 then
+  elseif facing == 4 then
     return x - v, y, z
   else
     log.error("getLinearMovementPos: bad facing " .. tostring(facing))
@@ -114,21 +115,22 @@ function up(times)
   if times == nil then
     times = 1
   end
-  while times ~= 0 then
+  while times ~= 0 do
     ret = _up()
     if ret == OK then
       y = y + 1
       save()
       send()
-    else if ret == BLOCK then
+    elseif ret == BLOCK then
       local s,d = turtle.inspectUp()
       if s then
         sendBlock(x,y+1,z,d.name)
       end
       if useError then
         error("up:BLOCK")
-      return BLOCK
-    else if ret == MOB then
+        return BLOCK
+      end
+    elseif ret == MOB then
       sendObsticle(x,y+1,z)
       if useError then
         error("up:MOB")
@@ -161,13 +163,13 @@ function down()
   if times == nil then
     times = 1
   end
-  while times ~= 0 then
+  while times ~= 0 do
     ret = _down()
     if ret == OK then
       y = y - 1
       save()
       send()
-    else if ret == BLOCK then
+    elseif ret == BLOCK then
       local s,d = turtle.inspectDown()
       if s then
         sendBlock(x,y-1,z,d.name)
@@ -177,7 +179,7 @@ function down()
       else
         return BLOCK
       end
-    else if ret == MOB then
+    elseif ret == MOB then
       sendObsticle(x,y-1,z)
       if useError then
         error("down:MOB")
@@ -210,13 +212,13 @@ function forward(times)
   if times == nil then
     times = 1
   end
-  while times ~= 0 then
+  while times ~= 0 do
     ret = _forward()
     if ret == OK then
       x, y, z = getLinearMovementPos(1)
       save()
       send()
-    else if ret == BLOCK then
+    elseif ret == BLOCK then
       local s,d = turtle.inspect()
       if s then
         local a, b, c = getLinearMovementPos(1)
@@ -227,7 +229,7 @@ function forward(times)
       else
         return BLOCK
       end
-    else if ret == MOB then
+    elseif ret == MOB then
       local a,b,c = getLinearMovementPos(1)
       sendObsticle(a,b,c)
       if useError then
@@ -258,13 +260,13 @@ function back(times)
   if times == nil then
     times = 1
   end
-  while times ~= 0 then
+  while times ~= 0 do
     ret = _back()
     if ret == OK then
       x, y, z = getLinearMovementPos(-1)
       save()
       send()
-    else if ret == BLOCK then
+    elseif ret == BLOCK then
       local s,d = turtle.inspectDown()
       if s then
         local a, b, c = getLinearMovementPos(-1)
@@ -275,7 +277,7 @@ function back(times)
       else
         return BLOCK
       end
-    else if ret == MOB then
+    elseif ret == MOB then
       local a, b, c = getLinearMovementPos(-1)
       sendObsticle(a,b,c)
       if useError then
@@ -311,11 +313,11 @@ end
 -- Finds the inventory number that has the block by name
 function find(name)
   -- turtle.getItemDetail returns {name=,count=,metadata=}
-  pos = turtle.getInventoryPos()
+  pos = turtle.getSelectedSlot()
   for i=1,16,1 do
     info = turtle.getItemDetail(i)
     if info.name == name then
-      turtle.setInventoryPos(pos)
+      turtle.select(pos)
       return i
     end
   end

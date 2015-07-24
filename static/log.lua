@@ -1,8 +1,9 @@
 os.loadAPI("rest")
+os.loadAPI("config")
 
-local function sendLogMessage(msg, level)
-  rest.post("logging/"..id.."/"..level,msg)
-  print("["..level..
+local function sendLogMessage(msg, level,levelstr)
+  rest.post("logging/"..config.id.."/"..level,msg)
+  print("["..levelstr.."] "..msg)
 end
 
 function debug(msg)
@@ -15,6 +16,10 @@ end
 
 function notice(msg)
   sendLogMessage(msg,5,"NOTICE")
+end
+
+function info(msg)
+  notice(msg)
 end
 
 function critical(msg)

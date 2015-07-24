@@ -9,9 +9,10 @@
 os.loadAPI("log")
 os.loadAPI("config")
 os.loadAPI("rest")
+os.loadAPI("m")
 
-print("Core")
-print(config.id)
+log.debug("Core")
+log.debug(config.id)
 
 -- Are we new?
 os.sleep(1)
@@ -19,7 +20,7 @@ h1 = rest.get("turtle/" .. config.id .. "/status")
 
 if h1 == nil then
   -- This is a new turtle!
-  log.debug("Attempting to register new turtle")
+  log.info("Attempting to register new turtle")
   h2 = rest.post("turtle/"..config.id.."/register",
     {
       x=0,
@@ -30,10 +31,12 @@ if h1 == nil then
   if h2 ~= nil then
     log.info("New turtle "..config.id.." registered")
     h2:close()
-  end
   else
+    log.critical("Can't make new turtle!")
+  end
+else
   -- Load pos from file
-  m.loadPos()
+  m.load()
   -- Get pos from server
   h2 = rest.get("turtle/"..config.id.."/getPosition")
   

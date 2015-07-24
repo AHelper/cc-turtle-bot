@@ -53,6 +53,9 @@ class Turtle:
     """
     pass
   
+  def getCurrentTaskInfo(self):
+    pass
+  
   def getHumanReadableCurrentTask(self):
     return "Faffing about"
   

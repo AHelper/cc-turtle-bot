@@ -8,12 +8,15 @@ end
   
 url = "http://localhost:34299/"
 -- Download filelist
+print(url.."listing")
 h = http.get(url.."listing")
 -- For line in h do
 
 if h == nil then
-  print("Couldn't get listing")
+  print("FAIL")
   fail()
+else
+  print("OK")
 end
 
 while true do
@@ -23,17 +26,18 @@ while true do
     break 
   end
   
+  print(url.."static/"..line)
   hnd = http.get(url.."static/"..line)
   
   if hnd == nil then
-    print("Couldn't get a needed file")
-    print(url.."static/"..line)
+    print("FAIL")
     fail()
   end
   -- TODO: Strip the .lua off of the files
   f = io.open(line:sub(0,-5),"w")
   f:write(hnd:readAll())
   f:close()
+  print("OK")
 end
 
 h = http.get(url.."startup")
@@ -54,11 +58,20 @@ h:close()
 -- end
 
 -- TODO: exec?
-if pcall(shell.run(start)) then
-  os.reboot()
-  print("Payload exited cleanly")
-  fail()
-else
-  print("Exception caught in payload")
+if not pcall(function()
+  os.loadAPI("log")
+
+  local ok, msg = pcall(shell.run(start))
+  if ok then
+    os.reboot()
+    log.info("Payload exited cleanly")
+    fail()
+  else
+    log.critical("Exception caught in payload")
+    log.critical(msg)
+    fail()
+  end
+end) then
+  print("Holy crap, init failed!")
   fail()
 end

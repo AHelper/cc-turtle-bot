@@ -118,6 +118,13 @@ class TurtleStatusHandler(JSONHandler):
     else:
       self.write_json({"type":"success","current":sys.getTurtle(turtle_name).getHumanReadableCurrentTask(),"future":sys.getTurtle(turtle_name).getHumanReadableFutureTasks()})
 
+class TurtleActionHandler(JSONHandler):
+  def get(self, id):
+    if not sys.hasTurtle(id):
+      raise HTTPError(404)
+    else:
+      self.write_json({"type":"success","action":sys.getTurtle(id).getCurrentTaskInfo()["action"],"data":sys.getTurtle(id).getCurrentTaskInfo()["data"]})
+      
 class ListingHandler(JSONHandler):
   def get(self):
     os.chdir('static')
@@ -155,9 +162,9 @@ routes = [
   (r"/pathing/get", PathingGetHandler),
   (r"/pathing/set", PathingSetHandler),
   (r"/pathing/query", PathingQueryHandler),
-  (r"/turtles/([^/]+)/register", RegisterTurtleHandler),
-  (r"/turtles/([^/]+)/unregister", UnregisterTurtleHandler),
-  (r"/turtles/([^/]+)/status", TurtleStatusHandler),
+  (r"/turtle/([^/]+)/register", RegisterTurtleHandler),
+  (r"/turtle/([^/]+)/unregister", UnregisterTurtleHandler),
+  (r"/turtle/([^/]+)/status", TurtleStatusHandler),
   (r"/logging/([^/]+)/(.*)", LoggingHandler),
   (r"/resthelp", HelpHandler),
   (r"/listing",ListingHandler),
