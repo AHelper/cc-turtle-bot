@@ -38,15 +38,15 @@ else
   -- Load pos from file
   m.load()
   -- Get pos from server
-  h2 = rest.get("turtle/"..config.id.."/getPosition")
+  h2 = rest.get("turtle/"..config.id.."/position")
   
   if h2 ~= nil then
-    j = textutils.deserialize(h2:readAll())
+    j = textutils.unserialize(h2:readAll())
     h2:close()
     
     if j.x ~= m.x or j.y ~= m.y or j.z ~= m.z or j.facing ~= m.facing then
       log.notice("Our position is newer than the server's")
-      h2 = rest.post("turtle/"..config.id.."/setPosition", {
+      h2 = rest.post("turtle/"..config.id.."/position", {
         x=m.x,
         y=m.y,
         z=m.z,

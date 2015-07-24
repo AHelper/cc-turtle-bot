@@ -16,6 +16,7 @@ from tornado.web import HTTPError
 from glob import glob
 import os
 import logging
+from cStringIO import StringIO
 
 import pathing
 from requestparser import RequestValidator
@@ -50,7 +51,34 @@ class JSONHandler(tornado.web.RequestHandler):
   def write_error(self, status_code, **kwargs):
     self.write(tornado.escape.json_encode({"type":"error","message":"error code {}".format(status_code)}))
   def write_json(self, j):
-    self.write(tornado.escape.json_encode(j))
+    #self.write(tornado.escape.json_encode(j))
+    self.write(self.__jtos(j))
+  def __jtos(self,v):
+    if type(v) == int or type(v) == float:
+      return str(v)
+    elif type(v) == unicode or type(v) == str:
+      return '"'+v+'"'
+    elif type(v) == list or type(v) == tuple:
+      return self.__jtos_l(v)
+    elif type(v) == dict:
+      return self.__jtos_d(v)
+  def __jtos_d(self,j):
+    s = StringIO()
+    s.write("{")
+    for k,v in j.iteritems():
+      s.write(k+"=")
+      s.write(self.__jtos(v))
+      s.write(",")
+    s.write("}")
+    return s.getvalue()
+  def __jtos_l(self,j):
+    s = StringIO()
+    s.write("{")
+    for v in j:
+      s.write(self.__jtos(v))
+      s.write(",")
+    s.write("}")
+    return s.getvalue()
   def read_json(self):
     try:
       return tornado.escape.json_decode(self.request.body)
@@ -125,6 +153,25 @@ class TurtleActionHandler(JSONHandler):
     else:
       self.write_json({"type":"success","action":sys.getTurtle(id).getCurrentTaskInfo()["action"],"data":sys.getTurtle(id).getCurrentTaskInfo()["data"]})
       
+class TurtlePositionHandler(JSONHandler):
+  def get(self, id):
+    if not sys.hasTurtle(id):
+      raise HTTPError(404)
+    else:
+      t = sys.getTurtle(id)
+      self.write_json(t.getPosition())
+  def post(self, id):
+    if not sys.hasTurtle(id):
+      raise HTTPError(404)
+    else:
+      req = self.read_json()
+      if not validator.validate(TurtlePositionHandler, req):
+        raise HTTPError(400)
+      else:
+        t = sys.getTurtle(id)
+        t.setPosition(req["x"],req["y"],req["z"],req["facing"])
+        self.write_json({"type":"success"})
+      
 class ListingHandler(JSONHandler):
   def get(self):
     os.chdir('static')
@@ -165,6 +212,7 @@ routes = [
   (r"/turtle/([^/]+)/register", RegisterTurtleHandler),
   (r"/turtle/([^/]+)/unregister", UnregisterTurtleHandler),
   (r"/turtle/([^/]+)/status", TurtleStatusHandler),
+  (r"/turtle/([^/]+)/position", TurtlePositionHandler),
   (r"/logging/([^/]+)/(.*)", LoggingHandler),
   (r"/resthelp", HelpHandler),
   (r"/listing",ListingHandler),
@@ -207,6 +255,12 @@ validator.setup({
   TurtleStatusHandler: { 
   },
   ListingHandler: {
+  },
+  TurtlePositionHandler: {
+    "x":(int,float),
+    "y":(int,float),
+    "z":(int,float),
+    "facing":int,
   }
 }, routes)
 app = tornado.web.Application(routes, **settings)
@@ -216,6 +270,8 @@ if __name__ == '__main__':
   port = 34299
   app.listen(port)
   print("server listening on port {}".format(port))
+  print(dir(tornado.log.access_log))
+  tornado.log.access_log.setLevel(logging.DEBUG)
   try:
     tornado.ioloop.IOLoop.instance().start()
   except KeyboardInterrupt:

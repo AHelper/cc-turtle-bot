@@ -19,7 +19,7 @@
 /turtle/(.*)/getInventory  Gets the inventory of a turtle
   GET
   SAME AS ABOVE
-/turtle/(.*)/getPosition  Gets the position of a turtle
+/turtle/(.*)/position  Gets/Sets the position of a turtle
   SEE SIMILAR HANDLERS
 /turtle/(.*)/setState  Sets the state of the turtle
   {

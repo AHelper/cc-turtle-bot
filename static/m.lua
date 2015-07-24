@@ -19,7 +19,7 @@ RIGHT = 5
 local useError = false
 
 local function sendPos()
-  r=rest.post("turtle/"..config.id.."/setPosition",{
+  r=rest.post("turtle/"..config.id.."/position",{
     x=x,y=y,z=z,facing=facing
   })
   if r ~= nil then
@@ -84,7 +84,7 @@ end
 local function getLinearMovementPos(v)
   if facing == 1 then
     return x, y, z + v
-  elseif --[[facing]] == 2 then
+  elseif facing == 2 then
     return x + v, y, z
   elseif facing == 3 then
     return x, y, z - v
@@ -288,6 +288,31 @@ function back(times)
     end
     times = times - 1
   end
+end
+
+function left()
+  turtle.turnLeft()
+  if facing ~= 1 then
+    facing = facing - 1
+  else
+    facing = 4
+  end
+  print(facing)
+  save()
+  print(facing)
+  sendPos()
+  print(facing)
+end
+
+function right()
+  turtle.turnRight()
+  if facing ~= 4 then
+    facing = facing + 1
+  else
+    facing = 1
+  end
+  save()
+  sendPos()
 end
 
 -- Inv: inventory slot to use. If nil, use current
