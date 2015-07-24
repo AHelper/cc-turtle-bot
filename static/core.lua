@@ -10,19 +10,17 @@ os.loadAPI("log")
 os.loadAPI("config")
 os.loadAPI("rest")
 
-id = os.getComputerID()
-
 print("Core")
-print(id)
+print(config.id)
 
 -- Are we new?
 os.sleep(1)
-h1 = rest.get("turtle/" .. id .. "/status")
+h1 = rest.get("turtle/" .. config.id .. "/status")
 
 if h1 == nil then
   -- This is a new turtle!
   log.debug("Attempting to register new turtle")
-  h2 = rest.post("turtle/"..id.."/register",
+  h2 = rest.post("turtle/"..config.id.."/register",
     {
       x=0,
       y=0,
@@ -30,14 +28,14 @@ if h1 == nil then
       facing=0
     })
   if h2 ~= nil then
-    log.info("New turtle "..id.." registered")
+    log.info("New turtle "..config.id.." registered")
     h2:close()
   end
   else
   -- Load pos from file
   m.loadPos()
   -- Get pos from server
-  h2 = rest.get("turtle/"..id.."/getPosition")
+  h2 = rest.get("turtle/"..config.id.."/getPosition")
   
   if h2 ~= nil then
     j = textutils.deserialize(h2:readAll())
@@ -45,7 +43,7 @@ if h1 == nil then
     
     if j.x ~= m.x or j.y ~= m.y or j.z ~= m.z or j.facing ~= m.facing then
       log.notice("Our position is newer than the server's")
-      h2 = rest.post("turtle/"..id.."/setPosition", {
+      h2 = rest.post("turtle/"..config.id.."/setPosition", {
         x=m.x,
         y=m.y,
         z=m.z,

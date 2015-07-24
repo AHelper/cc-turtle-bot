@@ -31,20 +31,25 @@ end
 function invoke(data)
   local inv = -1
   if data.type == "turtle" then
-    inv = m.findG("turtle") -- TODO: ID of turtle
+    inv = m.find("turtle") -- TODO: ID of turtle
     -- TODO: One for each type of turtle
   else
-    inv = m.findG("computer") -- TODO: ID of computer
+    inv = m.find("computer") -- TODO: ID of computer
   end
   
-  if inv ~= -1 then
-    m.begin()
+  if inv then
+    m.setError(true)
     if pcall(place, inv) then
       m.finish()
-      log.info("
+      log.info("Spawned turtle")
+      rest.get("turtle/"..config.id.."/success", true)
     else
-      m.revert()
+      log.error("Could not spawn turtle")
+      rest.get("turtle/"..config.id.."/failure", true)
     end
+    m.setError(false)
   else
-    
+    log.error("Don't have needed blocks")
+    rest.get("turtle/"..config.id.."/failure", true)
   end
+end

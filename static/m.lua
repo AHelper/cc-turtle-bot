@@ -16,7 +16,7 @@ BACK = 3
 LEFT = 4
 RIGHT = 5
 
-local moveBlock = []
+local useError = false
 
 function save()
   f=io.open('m_cache','w')
@@ -34,14 +34,22 @@ function load()
   y=t.y
   z=t.z
   facing=t.facing
+  
+  sendPos()
 end
 
-function sendPos()
+function setError(err)
+  useError = err
+end
+
+local function sendPos()
   r=rest.post("turtle/"..config.id.."/setPosition",{
     x=x,y=y,z=z,facing=facing
   })
   if r ~= nil then
     r:close()
+  else
+    log.error("sendPos: Failed to setPosition")
   end
 end
 
@@ -112,16 +120,21 @@ function up(times)
       y = y + 1
       save()
       send()
-      -- TODO: Add to movement list
     else if ret == BLOCK then
       local s,d = turtle.inspectUp()
       if s then
         sendBlock(x,y+1,z,d.name)
       end
+      if useError then
+        error("up:BLOCK")
       return BLOCK
     else if ret == MOB then
       sendObsticle(x,y+1,z)
-      return MOB
+      if useError then
+        error("up:MOB")
+      else
+        return MOB
+      end
     end
     times = times - 1
   end
@@ -154,16 +167,23 @@ function down()
       y = y - 1
       save()
       send()
-      -- TODO: Add to movement list
     else if ret == BLOCK then
       local s,d = turtle.inspectDown()
       if s then
         sendBlock(x,y-1,z,d.name)
       end
-      return BLOCK
+      if useError then
+        error("down:BLOCK")
+      else
+        return BLOCK
+      end
     else if ret == MOB then
       sendObsticle(x,y-1,z)
-      return MOB
+      if useError then
+        error("down:MOB")
+      else
+        return MOB
+      end
     end
     times = times - 1
   end
@@ -196,18 +216,25 @@ function forward(times)
       x, y, z = getLinearMovementPos(1)
       save()
       send()
-      -- TODO: Add to movement list
     else if ret == BLOCK then
       local s,d = turtle.inspect()
       if s then
         local a, b, c = getLinearMovementPos(1)
         sendBlock(a,b,c,d.name)
       end
-      return BLOCK
+      if useError then
+        error("forward:BLOCK")
+      else
+        return BLOCK
+      end
     else if ret == MOB then
       local a,b,c = getLinearMovementPos(1)
       sendObsticle(a,b,c)
-      return MOB
+      if useError then
+        error("forward:MOB")
+      else
+        return MOB
+      end
     end
     times = times - 1
   end
@@ -237,18 +264,25 @@ function back(times)
       x, y, z = getLinearMovementPos(-1)
       save()
       send()
-      -- TODO: Add to movement list
     else if ret == BLOCK then
       local s,d = turtle.inspectDown()
       if s then
         local a, b, c = getLinearMovementPos(-1)
         sendBlock(a,b,c,d.name)
       end
-      return BLOCK
+      if useError then
+        error("back:BLOCK")
+      else
+        return BLOCK
+      end
     else if ret == MOB then
       local a, b, c = getLinearMovementPos(-1)
       sendObsticle(a,b,c)
-      return MOB
+      if useError then
+        error("back:MOB")
+      else
+        return MOB
+      end
     end
     times = times - 1
   end
@@ -257,17 +291,37 @@ end
 -- Inv: inventory slot to use. If nil, use current
 function place(inv)
   log.error("place: unimplemented")
-  return false
+  if useError then
+    error("place:UNIMP")
+  else
+    return false
+  end
 end
 
 -- Turns on the turtle in front
 function on()
   log.error("on: unimplemented")
-  return false
+  if useError then
+    error("on:UNIMP")
+  else
+    return false
+  end
 end
 
 -- Finds the inventory number that has the block by name
 function find(name)
   -- turtle.getItemDetail returns {name=,count=,metadata=}
-  for 
+  pos = turtle.getInventoryPos()
+  for i=1,16,1 do
+    info = turtle.getItemDetail(i)
+    if info.name == name then
+      turtle.setInventoryPos(pos)
+      return i
+    end
+  end
+  if useError then
+    error("find:404")
+  else
+    return nil
+  end
 end
