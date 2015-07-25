@@ -1,4 +1,5 @@
 os.loadAPI("rest")
+os.loadAPI("blockmap")
 
 local _x = 0
 local _y = 0
@@ -19,7 +20,7 @@ RIGHT = 5
 local useError = false
 
 local function sendPos()
-  r=rest.post("turtle/"..config.id.."/position",{
+  local r=rest.post("turtle/"..config.id.."/position",{
     x=_x,y=_y,z=_z,facing=_facing
   })
   if r ~= nil then
@@ -46,7 +47,7 @@ function facing()
 end
 
 function save()
-  f=io.open('m_cache','w')
+  local f=io.open('m_cache','w')
   f:write(textutils.serialize({
     x=_x,y=_y,z=_z,facing=_facing
   }))
@@ -54,12 +55,12 @@ function save()
 end
 
 function load()
-  f=io.open('m_cache','r')
+  local f=io.open('m_cache','r')
   local ok = false
   if f then
-    e,s = pcall(function()
-      r=f:read('*a')
-      t=textutils.unserialize(r)
+    local e,s = pcall(function()
+      local r=f:read('*a')
+      local t=textutils.unserialize(r)
       f:close()
       _x=t.x
       _y=t.y
@@ -84,7 +85,7 @@ function setError(err)
 end
 
 function sendBlock(x,y,z,b)
-  r=rest.post("pathing/set",{
+  local r=rest.post("pathing/set",{
     x=x,
     y=y,
     z=z,
@@ -98,7 +99,7 @@ function sendBlock(x,y,z,b)
 end
 
 function sendObsticle(x,y,z)
-  r=rest.post("pathing/setObsticle",{
+  local r=rest.post("pathing/setObsticle",{
     x=x,
     y=y,
     z=z
@@ -142,10 +143,10 @@ end
 
 function up(times)
   if times == nil then
-    times = 1
+    local times = 1
   end
   while times ~= 0 do
-    ret = _up()
+    local ret = _up()
     if ret == OK then
       _y = _y + 1
       save()
@@ -153,7 +154,7 @@ function up(times)
     elseif ret == BLOCK then
       local s,d = turtle.inspectUp()
       if s then
-        sendBlock(_x,_y+1,_z,d.name)
+        sendBlock(_x,_y+1,_z,blockmap.toId(d.name))
       end
       if useError then
         error("up:BLOCK")
@@ -188,12 +189,12 @@ local function _down()
   end
 end
 
-function down()
+function down(times)
   if times == nil then
-    times = 1
+    local times = 1
   end
   while times ~= 0 do
-    ret = _down()
+    local ret = _down()
     if ret == OK then
       _y = _y - 1
       save()
@@ -201,7 +202,7 @@ function down()
     elseif ret == BLOCK then
       local s,d = turtle.inspectDown()
       if s then
-        sendBlock(_x,_y-1,_z,d.name)
+        sendBlock(_x,_y-1,_z,blockmap.toId(d.name))
       end
       if useError then
         error("down:BLOCK")
@@ -239,10 +240,10 @@ end
 
 function forward(times)
   if times == nil then
-    times = 1
+    local times = 1
   end
   while times ~= 0 do
-    ret = _forward()
+    local ret = _forward()
     if ret == OK then
       _x, _y, _z = getLinearMovementPos(1)
       save()
@@ -251,7 +252,7 @@ function forward(times)
       local s,d = turtle.inspect()
       if s then
         local a, b, c = getLinearMovementPos(1)
-        sendBlock(a,b,c,d.name)
+        sendBlock(a,b,c,blockmap.toId(d.name))
       end
       if useError then
         error("forward:BLOCK")
@@ -269,6 +270,7 @@ function forward(times)
     end
     times = times - 1
   end
+  return OK
 end
 
 -- Here's where things get interesting
@@ -278,7 +280,7 @@ local function _back()
   else
     turtle.turnLeft()
     turtle.turnLeft()
-    ret = _forward()
+    local ret = _forward()
     turtle.turnRight()
     turtle.turnRight()
     return ret
@@ -287,10 +289,10 @@ end
 
 function back(times)
   if times == nil then
-    times = 1
+    local times = 1
   end
   while times ~= 0 do
-    ret = _back()
+    local ret = _back()
     if ret == OK then
       _x, _y, _z = getLinearMovementPos(-1)
       save()
@@ -299,7 +301,7 @@ function back(times)
       local s,d = turtle.inspectDown()
       if s then
         local a, b, c = getLinearMovementPos(-1)
-        sendBlock(a,b,c,d.name)
+        sendBlock(a,b,c,blockmap.toId(d.name))
       end
       if useError then
         error("back:BLOCK")
@@ -317,6 +319,7 @@ function back(times)
     end
     times = times - 1
   end
+  return OK
 end
 
 function left()
@@ -361,13 +364,13 @@ function on()
   end
 end
 
--- Finds the inventory number that has the block by name
-function find(name)
+-- Finds the inventory number that has the block by id
+function find(id)
   -- turtle.getItemDetail returns {name=,count=,metadata=}
-  pos = turtle.getSelectedSlot()
+  local pos = turtle.getSelectedSlot()
   for i=1,16,1 do
-    info = turtle.getItemDetail(i)
-    if info.name == name then
+    local info = turtle.getItemDetail(i)
+    if blockmap.toId(info.name) == id then
       turtle.select(pos)
       return i
     end

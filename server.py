@@ -62,6 +62,8 @@ class JSONHandler(tornado.web.RequestHandler):
       return self.__jtos_l(v)
     elif type(v) == dict:
       return self.__jtos_d(v)
+    elif v == None:
+      return "null"
   def __jtos_d(self,j):
     s = StringIO()
     s.write("{")
@@ -276,4 +278,5 @@ if __name__ == '__main__':
     tornado.ioloop.IOLoop.instance().start()
   except KeyboardInterrupt:
     pass
+  sys.pathing.save()
   

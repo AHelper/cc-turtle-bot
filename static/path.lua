@@ -2,7 +2,7 @@ os.loadAPI("log")
 os.loadAPI("m")
 
 function pathAlong(points)
-  first = table.remove(points, 1)
+  local first = table.remove(points, 1)
   if m.x() ~= first[1] or m.y() ~= first[2] or m.z() ~= first[3] then
     log.error("I am not where I am supposed to be. Should be at "..v[1]..","..v[2]..","..v[3].." but am at "..m.x..","..m.y..","..m.z)
     return false
@@ -11,10 +11,12 @@ function pathAlong(points)
     -- What direction must I go? Assume these are linear
     local facing = nil
     local move = 0
+    local r = 0
+    -- log.debug("Move to "..v[1]..","..v[2]..","..v[3].." from "..m.x()..","..m.y()..","..m.z())
     if v[2] > m.y() then
       r=m.up(v[2]-m.y())
     elseif v[2] < m.y() then
-      m.down(m.y-v[2])
+      r=m.down(m.y()-v[2])
     elseif v[1] > m.x() then
       facing = 2
       move = v[1] - m.x()
@@ -31,14 +33,19 @@ function pathAlong(points)
     
     -- TODO: Optimize movement
     if facing then
-      while facing ~= m.facing() do
-        log.debug("Now: "..tostring(m.facing()).." wants: "..tostring(facing))
-        m.left()
+      if (m.facing()%4)+1 == facing then
+        m.right()
+      else while facing ~= m.facing() do
+          log.debug("Now: "..tostring(m.facing()).." wants: "..tostring(facing))
+          m.left()
+        end
       end
     end
     
-    r = m.forward(move)
-    if r ~= OK then
+    if move ~= 0 then
+      r = m.forward(move)
+    end
+    if r ~= m.OK then
       return r
     end
     
@@ -53,9 +60,9 @@ end
 function test()
   m.load()
   dest = {
-    x=-4,
-    y=1,
-    z=1
+    x=-18, --281-263
+    y=4, --73-77
+    z=-166 --308-474
   }
   
   while m.x() ~= dest.x or m.y() ~= dest.y or m.z() ~= dest.z do
@@ -70,6 +77,6 @@ function test()
     })
     j=textutils.unserialize(h:readAll())
     h:close()
-    pathAlong(j.path)
+    log.debug("Result was "..tostring(pathAlong(j.path)))
   end
 end

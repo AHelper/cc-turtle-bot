@@ -6,6 +6,10 @@ class Pathing:
   def __init__(self):
     self.octrees = {}
     self.size = 256
+    
+  def save(self):
+    for k, o in self.octrees.iteritems():
+      o.save("chunks/{}.o".format(k))
   
   def __lookupoctree(self,x,y,z):
     key = "{},{},{}".format(x/self.size,y/self.size,z/self.size)
@@ -22,12 +26,12 @@ class Pathing:
   def set(self,x,y,z,v):
     o = self.__lookupoctree(x,y,z)
     
-    o.setPoint(x,y,z,v)
+    o.setPoint(x%self.size,y%self.size,z%self.size,v)
   
   def get(self,x,y,z):
     o = self.__lookupoctree(x,y,z)
     
-    return o.getPoint(x,y,z)
+    return o.getPoint(x%self.size,y%self.size,z%self.size)
   
   # Need A* algorithm with an eliminator function
   def pathSearch(self, start, end):
@@ -66,6 +70,27 @@ class Pathing:
     def h(n):
       return c(n, nodes[end])
     
+    def calcHeading(n1,n2): # from, to
+      if n2.z > n1.z:
+        return 0
+      elif n2.x > n1.x:
+        return 1
+      elif n2.z < n1.z:
+        return 2
+      elif n2.x < n1.x:
+        return 3
+      return n1.direction
+    
+    def calcHeadingScore(a,b):
+      if a == None or b == None:
+        return 0
+      elif a == b:
+        return 0
+      elif ((a+1)%4) == b or a == ((b+1)%4):
+        return 1
+      else:
+        return 2
+      
     class Node:
       def __init__(self,xyz,parent,super):
         self.xyz = xyz
@@ -73,9 +98,16 @@ class Pathing:
         self.parent = parent
         if parent == end:
           self.score = 0
-        #elif parent != None:
-          #self.score = parent.score + h(self.parent)
+          self.scoreg = 0
+          self.direction = None
+        elif parent != None:
+          self.scoreg = self.parent.scoreg
+          self.direction = calcHeading(self.parent, self) # TODO: Calculate
+          self.scoreg += calcHeadingScore(self.parent.direction, self.direction)
+          self.score = self.scoreg + h(self)
         else:
+          self.scoreg = 0
+          self.direction = None
           self.score = h(self)
         self.super = super
         self.value = super.get(*xyz)
@@ -113,6 +145,7 @@ class Pathing:
     while len(openSet) > 0:
       node = openSet.pop()
       
+      #print("Open set is {} with node at {},{},{} {}".format(len(openSet), node.x,node.y,node.z,node.score))
       step += 1
       if node == nodes[end]:
         print("Found path")
@@ -132,6 +165,7 @@ class Pathing:
     # Walk back
     ret = []
     while node != None:
+      #print("Resolving")
       ret.append(node.xyz)
       node = node.parent
     ret.reverse()
