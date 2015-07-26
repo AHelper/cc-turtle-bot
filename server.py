@@ -110,7 +110,10 @@ class PathingSetHandler(JSONHandler):
   def post(self):
     req = self.read_json()
     
-    sys.pathing.set(int(req["x"]), int(req["y"]), int(req["z"]), int(req["value"]))
+    if req["value"] == None:
+      sys.pathing.set(int(req["x"]), int(req["y"]), int(req["z"]), None)
+    else:
+      sys.pathing.set(int(req["x"]), int(req["y"]), int(req["z"]), int(req["value"]))
     
     self.write_json({"response":"success","message":"point set"})
 

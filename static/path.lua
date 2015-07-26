@@ -57,6 +57,27 @@ function pathAlong(points)
   return true
 end
 
+function findPath(x,y,z)
+  r=rest.post("pathing/query",{
+    source={
+      x=m.x(),
+      y=m.y(),
+      z=m.z()
+    },
+    destination={
+      x=x,
+      y=y,
+      z=z
+    }
+  },true)
+  
+  if not r then
+    return nil
+  else
+    return textutils.unserialize(r).path
+  end
+end
+
 function test()
   m.load()
   dest = {
