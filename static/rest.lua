@@ -74,7 +74,7 @@ api = {
               }, true)
               
               if str then
-                return textutils.unserialize(str).pathing
+                return textutils.unserialize(str).path
               else
                 return nil
               end
