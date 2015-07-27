@@ -1,0 +1,95 @@
+On start, needs to build starting spot.  For that, needs to find ground.  Must go down until a block is hit.  From there, detect the type of block.  
+If it is a building surface, then scan the plot's ground.  If it is buildable, then mark it.
+
+Goal tree:  [goal] *action* [[requirement]]
+[complete]
+  [t1]
+    [find surface]
+      (move down)
+    [explore] -- Find out the environment
+    [construct monument$1]
+      [[needs resources]]
+        [gather X]
+          [[knows where X is]]
+            (explore)
+          (moveto X)
+          (collect X)
+      [[needs space]]
+        (explore)
+      [reserve]
+        [collect resources]
+          (moveto container)
+          (transfer resource)
+        (moveto space)
+        (flatten)
+        (build monument)
+  [t2]
+    [construct mine$1]
+      Same as above
+    [set resourcelimit stone(64), dirt(64)]
+    [construct crafthaus$1]
+      Same old, same old
+    [[needs resources furnace]]
+      [craft furnace]
+        [[needs cobble(8)]]
+          {mine provides cobble}
+          [mine cobble(8)]
+            [reserve miner]
+              (moveto nearest(mine))
+              (mine cobble(8))
+        [reserve crafter]
+          [[needs cobble(8)]]
+            [deliver cobble(8) to crafter]
+              .. reserve mover, find resource(s), get, deliver
+          (craft furnace)
+  [t3]
+    [construct workshop$1]
+      Same (uses that furnace!)
+    [[needs resources coal(10), cobble(64), diamond(3), redstone(2), sand(8)]] -- Other stuff for turtle? Iron? What else?
+    [[needs glass(1)]]
+      [smelt sand(8)]
+        [reserve smelter]
+          [[needs burnable_for(8), sand(8)]]
+            [gather...]
+            [deliver...]
+          [[needs workshop]]
+          (moveto workshop)
+          (moveto :furnace)
+          (smelt sand(8))
+    [[needs stone(8)]]
+      Like above
+    -- May need other stuff, but...
+    [[needs mining turtle]]
+      [craft mining turtle]
+        [craft turtle...]
+        [craft diamond pickaxe...]
+          [craft sticks...]
+            [craft wood_planks...]
+        ...
+    [spawn mining turtle]
+    -- Now, when it spawns, it will make a goal automatically...
+    [refuel #3]
+      [reserve #3]
+        [[needs coal(10)]]
+          [deliver coal(10) to #3]
+        (refuel coal(10))
+  [t4]
+    [[needs population(storage, 2)]]
+    [construct warehaus$1]
+  [t5]
+    [[needs population(mining, 3), population(storage, 6)]]
+  [t6]
+    -- Make everything pretty
+    [set mintier 2]
+    -- Which will automatically have these generated...
+    [upgrade monument#1$2]
+    [upgrade mine#1$2]
+    [upgrade crafthaus#1$2]
+    [upgrade workshop#1$2]
+    [upgrade warehaus#1$2]
+  [t7]
+    -- Thinking back, there should be a perpetual goal to have fuel items on hand at all times
+    -- Environmentalist?
+This isn't very flexible.  It is expecting a vanilla world.  What about crazy worlds, like skyblock, flatlands?  Should that just be specified to it?
+
+            
