@@ -75,6 +75,7 @@ Goal tree:  [goal] *action* [[requirement]]
         (refuel coal(10))
   [t4]
     [[needs population(storage, 2)]]
+    [[needs lava]]
     [construct warehaus$1]
   [t5]
     [[needs population(mining, 3), population(storage, 6)]]
@@ -90,6 +91,33 @@ Goal tree:  [goal] *action* [[requirement]]
   [t7]
     -- Thinking back, there should be a perpetual goal to have fuel items on hand at all times
     -- Environmentalist?
-This isn't very flexible.  It is expecting a vanilla world.  What about crazy worlds, like skyblock, flatlands?  Should that just be specified to it?
+    [construct forrestry$2]
+  [t8]
+    -- Build up the town
+    [construct farmhaus]
+    [construct 3 farms]
+    [construct tradedepot]
+    [construct pond]
+    [cosntruct 2 gardens]
+    [construct 4 mines]
+  [t9]
+    -- Defend!
+    [fortify buffer=2 tier=2]
+  [t10]
+    -- Send out settlers
+    [reserve settler]
+      [explore dist=500]
+      [settle tier=1]
+  [t11]
+    -- Go crazy
+    -- All building inside fortification is reserved, new stuff is outside
+    -- City planning mode needs to start.
+    [construct rand(house)]
+    [construct rand(skyscraper)]
+  [goto t11]
+    -- And that's how a turtle civilization works in a vanilla world on the surface! Underground will have issues until it mines up to the surface
+    
+    
+-- This isn't very flexible.  It is expecting a vanilla world.  What about crazy worlds, like skyblock, flatlands?  Should that just be specified to it?
 
             
