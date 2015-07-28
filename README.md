@@ -5,4 +5,8 @@ This repository houses a goal/action-based AI made for ComputerCraft Turtles.  A
 
 The code is still in a planning phase and is not near completion.
 
-The Python and Lua code is released under a 
+License
+-------
+The Python and Lua code is released under a GPLv3 license.
+
+All static/*.csv files are released into the public domain (generated from NEI).
