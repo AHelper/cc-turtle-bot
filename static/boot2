@@ -61,7 +61,7 @@ h:close()
 if not pcall(function()
   os.loadAPI("log")
 
-  local ok, msg = pcall(shell.run(start))
+  local ok, msg = pcall(dofile(start))
   if ok then
     os.reboot()
     log.info("Payload exited cleanly")
