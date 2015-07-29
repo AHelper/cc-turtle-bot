@@ -1,0 +1,1 @@
+-- Maybe have itemmap and blockmap use common methods in some lua file?

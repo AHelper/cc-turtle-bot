@@ -47,3 +47,23 @@ function toId(name)
     error("toId: no blocks.csv")
   end
 end
+
+
+function toName(id)
+  local f = io.open('blocks.csv','r')
+  if f then
+    for line in f:lines() do
+      local parts = {}
+      for part in line:gmatch("[^,]+") do
+        table.insert(parts, part)
+      end
+      
+      if parts[2] == id then
+        return parts[1]
+      end
+    end
+    return nil
+  else
+    error("toName: no blocks.csv")
+  end
+end
