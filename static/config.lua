@@ -18,3 +18,5 @@
 server = "http://localhost:34299/"
 
 id = os.getComputerID()
+
+building_base_url = "/static/buildings/"

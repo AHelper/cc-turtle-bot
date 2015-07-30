@@ -1,0 +1,38 @@
+document = headers NL level*
+NL = \n
+headers = key: value NL
+level = position size NL\
+        block*
+position = X Y Z
+size = width_x with_z
+block = blockid damage orientation
+
+Possible Values for Headers
+---------------------------
+WIDTH_X
+- Width in blocks of the building in the X axis
+
+WIDTH_Z
+- Width in blocks of the building in the Z axis
+
+HEIGHT
+- Height in blocks of the building
+
+NAME
+- Friendly name of the building
+
+VERSION
+- Decimal value of the version
+
+AUTHOR
+- Name of the author(s) for the file
+
+LICENSE
+- License for the file
+
+Possible Values for Orientation
+-------------------------------
+Bits 0-1 denote direction
+- 0 is +Z, 1 is +X, 2 is -Z, 3 is -X
+Bit 2 denotes vertical flip
+- 1 is placed upwards for possible inversion
