@@ -56,7 +56,7 @@ class TurtleStatusHandler(JSONHandler):
     if not self.sys.hasTurtle(turtle_name):
       raise HTTPError(404)
     else:
-      self.write_json({"type":"success","current":sys.getTurtle(turtle_name).getHumanReadableCurrentTask(),"future":sys.getTurtle(turtle_name).getHumanReadableFutureTasks()})
+      self.write_json({"type":"success","current":self.sys.getTurtle(turtle_name).getHumanReadableCurrentTask(),"future":self.sys.getTurtle(turtle_name).getHumanReadableFutureTasks()})
 
 class TurtleActionHandler(JSONHandler):
   def initialize(self, sys):
@@ -66,7 +66,7 @@ class TurtleActionHandler(JSONHandler):
     if not self.sys.hasTurtle(id):
       raise HTTPError(404)
     else:
-      self.write_json({"type":"success","action":sys.getTurtle(id).getCurrentTaskInfo()["action"],"data":sys.getTurtle(id).getCurrentTaskInfo()["data"]})
+      self.write_json({"type":"success","action":self.sys.getTurtle(id).getCurrentTaskInfo()["action"],"data":self.sys.getTurtle(id).getCurrentTaskInfo()["data"]})
       
 class TurtlePositionHandler(JSONHandler):
   def initialize(self, sys):

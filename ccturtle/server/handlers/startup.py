@@ -20,5 +20,8 @@
 from ccturtle.server.json import JSONHandler
     
 class StartupHandler(JSONHandler):
+  def initialize(self, sys):
+    self.sys = sys
+    
   def get(self):
     self.write("core")

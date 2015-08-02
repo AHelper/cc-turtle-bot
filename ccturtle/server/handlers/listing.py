@@ -22,6 +22,9 @@ from glob import glob
 from ccturtle.server.json import JSONHandler
       
 class ListingHandler(JSONHandler):
+  def initialize(self, sys):
+    self.sys = sys
+    
   def get(self):
     self.write("\n".join([x[7:] for x in glob('static/*.lua')]))
       

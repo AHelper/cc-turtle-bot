@@ -1,6 +1,4 @@
 #!/bin/bash
 
 ./run-build.sh || exit
-docker rm turtle
-docker run --name turtle -it build/turtle /bin/bash
-
+docker run --name turtle -it --rm -p 34299:34299 build/turtle ccturtlesrv

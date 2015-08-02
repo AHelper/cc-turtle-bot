@@ -17,11 +17,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from __future__ import absolute_import
 import logging
 import tornado.log
 from ccturtle.server.json import JSONHandler
     
 class LoggingHandler(JSONHandler):
+  def initialize(self, sys):
+    self.sys = sys
+    
   def post(self, id, level):
     level = int(level)
     tornado.log.app_log.setLevel(logging.DEBUG)
