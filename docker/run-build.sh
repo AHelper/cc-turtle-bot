@@ -1,7 +1,7 @@
 #!/bin/bash
 
-cp ../ccturtle files -r
-cp ../static files -r
-cp ../setup.py files/
-docker build -t build/turtle .
+cp ../ccturtle files -r || exit 1
+cp ../static files -r || exit 1
+cp ../setup.py files/ || exit 1
+docker build -t build/turtle . || exit 1
 

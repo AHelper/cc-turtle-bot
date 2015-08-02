@@ -287,16 +287,14 @@ validator.setup({
 }, routes)
 app = tornado.web.Application(routes, **settings)
 
-if __name__ == '__main__':
+def start():
   print(validator.dump())
   port = 34299
   app.listen(port)
   print("server listening on port {}".format(port))
-  print(dir(tornado.log.access_log))
   tornado.log.access_log.setLevel(logging.DEBUG)
   try:
     tornado.ioloop.IOLoop.instance().start()
   except KeyboardInterrupt:
     pass
   sys.pathing.save()
-  
