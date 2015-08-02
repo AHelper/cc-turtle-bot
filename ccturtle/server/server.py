@@ -41,103 +41,92 @@ from ccturtle.turtle import Turtle
 
 from ccturtle.server import handlers
 import ccturtle.server.json
+from ccturtle.system import System
 
-class System:
-  def __init__(self):
-    self.pathing = pathing.Pathing()
-    self.turtles = {}
-    self.validator = RequestValidator()
-    
-  def addTurtle(self, turtle):
-    self.turtles[turtle.getName()] = turtle
-    
-  def getTurtle(self, name):
-    return self.turtles[name]
-  
-  def delTurtle(self, name):
-    del self.turtles[name]
-  
-  def hasTurtle(self, name):
-    return self.turtles.has_key(name)
+def createApp():
+  sys = System()
+          
+  settings = {
+    'default_handler_class': ccturtle.server.json.JSONErrorHandler,
+    'default_handler_args': dict(status_code=404),
+    'debug': True
+  }
 
-sys = System()
-        
-settings = {
-  'default_handler_class': ccturtle.server.json.JSONErrorHandler,
-  'default_handler_args': dict(status_code=404),
-  'debug': True
-}
+  init = dict(sys = sys)
 
-init = dict(sys = sys)
+  routes = [
+    (r"/pathing/get", handlers.PathingGetHandler, init),
+    (r"/pathing/set", handlers.PathingSetHandler, init),
+    (r"/pathing/query", handlers.PathingQueryHandler, init),
+    (r"/turtle/([^/]+)/register", handlers.RegisterTurtleHandler, init),
+    (r"/turtle/([^/]+)/unregister", handlers.UnregisterTurtleHandler, init),
+    (r"/turtle/([^/]+)/status", handlers.TurtleStatusHandler, init),
+    (r"/turtle/([^/]+)/position", handlers.TurtlePositionHandler, init),
+    (r"/logging/([^/]+)/(.*)", handlers.LoggingHandler, init),
+    (r"/resthelp", handlers.HelpHandler, init),
+    (r"/listing",handlers.ListingHandler, init),
+    (r"/startup",handlers.StartupHandler, init),
+    (r"/static/(.*)", tornado.web.StaticFileHandler, {'path': 'static'})
+  ]
 
-routes = [
-  (r"/pathing/get", handlers.PathingGetHandler, init),
-  (r"/pathing/set", handlers.PathingSetHandler, init),
-  (r"/pathing/query", handlers.PathingQueryHandler, init),
-  (r"/turtle/([^/]+)/register", handlers.RegisterTurtleHandler, init),
-  (r"/turtle/([^/]+)/unregister", handlers.UnregisterTurtleHandler, init),
-  (r"/turtle/([^/]+)/status", handlers.TurtleStatusHandler, init),
-  (r"/turtle/([^/]+)/position", handlers.TurtlePositionHandler, init),
-  (r"/logging/([^/]+)/(.*)", handlers.LoggingHandler, init),
-  (r"/resthelp", handlers.HelpHandler, init),
-  (r"/listing",handlers.ListingHandler, init),
-  (r"/startup",handlers.StartupHandler, init),
-  (r"/static/(.*)", tornado.web.StaticFileHandler, {'path': 'static'})
-]
-
-sys.validator.setup({
-  handlers.PathingQueryHandler: {
-    "source": {
+  sys.validator.setup({
+    handlers.PathingQueryHandler: {
+      "source": {
+        "x":(int,float),
+        "y":(int,float),
+        "z":(int,float)
+      },
+      "destination": {
+        "x":(int,float),
+        "y":(int,float),
+        "z":(int,float)
+      }
+    },
+    handlers.PathingSetHandler: {
+      "x":(int,float),
+      "y":(int,float),
+      "z":(int,float),
+      "value":(int)
+    },
+    handlers.PathingGetHandler: {
       "x":(int,float),
       "y":(int,float),
       "z":(int,float)
     },
-    "destination": {
+    handlers.RegisterTurtleHandler: {
       "x":(int,float),
       "y":(int,float),
-      "z":(int,float)
+      "z":(int,float),
+      "facing":int,
+    },
+    handlers.UnregisterTurtleHandler: {
+    },
+    handlers.TurtleStatusHandler: { 
+    },
+    handlers.ListingHandler: {
+    },
+    handlers.TurtlePositionHandler: {
+      "x":(int,float),
+      "y":(int,float),
+      "z":(int,float),
+      "facing":int,
     }
-  },
-  handlers.PathingSetHandler: {
-    "x":(int,float),
-    "y":(int,float),
-    "z":(int,float),
-    "value":(int)
-  },
-  handlers.PathingGetHandler: {
-    "x":(int,float),
-    "y":(int,float),
-    "z":(int,float)
-  },
-  handlers.RegisterTurtleHandler: {
-    "x":(int,float),
-    "y":(int,float),
-    "z":(int,float),
-    "facing":int,
-  },
-  handlers.UnregisterTurtleHandler: {
-  },
-  handlers.TurtleStatusHandler: { 
-  },
-  handlers.ListingHandler: {
-  },
-  handlers.TurtlePositionHandler: {
-    "x":(int,float),
-    "y":(int,float),
-    "z":(int,float),
-    "facing":int,
-  }
-}, routes)
-app = tornado.web.Application(routes, **settings)
+  }, routes)
+  
+  return (sys, tornado.web.Application(routes, **settings))
 
 def start():
+  sys, app = createApp()
+  
+  tornado.log.access_log.setLevel(logging.DEBUG)
   print(sys.validator.dump())
+  
   port = 34299
   app.listen(port)
+  
   print("server listening on port {}".format(port))
-  tornado.log.access_log.setLevel(logging.DEBUG)
   try:
     tornado.ioloop.IOLoop.instance().start()
   except KeyboardInterrupt:
     pass
-  sys.pathing.save()
+  sys.save()
