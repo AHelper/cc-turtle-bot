@@ -27,6 +27,7 @@ os.loadAPI("log")
 os.loadAPI("config")
 os.loadAPI("rest")
 os.loadAPI("m")
+os.loadAPI("actions")
 
 log.debug("cc-turtle-bot  Copyright (C) 2015 Collin Eggert\nThis program comes with ABSOLUTELY NO WARRANTY; This is free software, and you are welcome to redistribute it under certain conditions.")
 log.debug(config.id)

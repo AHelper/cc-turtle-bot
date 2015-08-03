@@ -68,6 +68,7 @@ end
 
 function toName(id)
   local f = io.open('blocks.csv','r')
+  id = tonumber(id)
   if f then
     for line in f:lines() do
       local parts = {}
@@ -75,7 +76,7 @@ function toName(id)
         table.insert(parts, part)
       end
       
-      if parts[2] == id then
+      if tonumber(parts[2]) == id then
         return parts[1]
       end
     end

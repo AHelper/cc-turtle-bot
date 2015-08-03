@@ -398,3 +398,64 @@ function find(id)
     return nil
   end
 end
+
+function inspect()
+  local ok, data = turtle.inspect()
+  local x, y, z = getLinearMovementPos(1)
+  
+  if ok then
+    local id = blockmap.toId(data.name)
+    
+    rest.api.pathing.set(x, y, z, id)
+    return data
+  else    
+    rest.api.pathing.set(x, y, z, 0)
+    return nil
+  end
+end
+
+function inspectUp()
+  local ok, data = turtle.inspectUp()
+  
+  if ok then
+    local id = blockmap.toId(data.name)
+    
+    rest.api.pathing.set(_x, _y + 1, _z, id)
+    return data
+  else    
+    rest.api.pathing.set(_x, _y + 1, _z, 0)
+    return nil
+  end
+end
+
+function inspectDown()
+  local ok, data = turtle.inspectDown()
+  
+  if ok then
+    local id = blockmap.toId(data.name)
+    
+    rest.api.pathing.set(_x, _y - 1, _z, id)
+    return data
+  else    
+    rest.api.pathing.set(_x, _y - 1, _z, 0)
+    return nil
+  end
+end
+
+function dig()
+  local ok = turtle.dig()
+  inspect()
+  return ok
+end
+
+function digUp()
+  local ok = turtle.digUp()
+  inspectUp()
+  return ok
+end
+
+function digDown()
+  local ok = turtle.digDown()
+  inspectDown()
+  return ok
+end

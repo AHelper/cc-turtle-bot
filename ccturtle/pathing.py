@@ -23,17 +23,20 @@ class Pathing:
   def __init__(self):
     self.octrees = {}
     self.size = 256
+    self.basepath = "/opt/chunks/"
     
   def save(self):
+    if not os.path.isdir(self.basepath):
+      os.mkdir(self.basepath)
     for k, o in self.octrees.iteritems():
-      o.save("chunks/{}.o".format(k))
+      o.save(self.basepath+"{}.o".format(k))
   
   def __lookupoctree(self,x,y,z):
     key = "{},{},{}".format(x/self.size,y/self.size,z/self.size)
     
     if key not in self.octrees:
       self.octrees[key] = octree.octree(self.size)
-      path = "chunks/{}.o".format(key)
+      path = self.basepath+"{}.o".format(key)
       
       if os.path.exists(path):
         self.octrees[key].load(path)

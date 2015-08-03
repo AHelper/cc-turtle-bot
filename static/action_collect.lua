@@ -17,6 +17,7 @@
 
 os.loadAPI("m")
 os.loadAPI("blockmap")
+os.loadAPI("log")
 
 -- ACTION: Collects block(s) around the turtle.
 -- data:
@@ -26,8 +27,11 @@ local function collect(inspect, dig, name)
   local info = inspect()
   
   if info then
+    log.debug("Found "..info.name)
     if info.name == name then
-      dig()
+      log.debug("Trying to dig")
+      local ok = dig()
+      if not ok then log.error("Failed to dig it") end
     end
   end
 end
@@ -35,13 +39,18 @@ end
 function invoke(data)
   local id = blockmap.toName(data.id)
   
-  collect(m.inspectUp, m.digUp, id)
-  collect(m.inspectDown, m.digDown, id)
-  collect(m.inspect, m.dig, id)
-  m.left()
-  collect(m.inspect, m.dig, id)
-  m.left()
-  collect(m.inspect, m.dig, id)
-  m.left()
-  collect(m.inspect, m.dig, id)
+  if id then
+    log.debug("Collecting " .. id)
+    collect(m.inspectUp, m.digUp, id)
+    collect(m.inspectDown, m.digDown, id)
+    collect(m.inspect, m.dig, id)
+    m.left()
+    collect(m.inspect, m.dig, id)
+    m.left()
+    collect(m.inspect, m.dig, id)
+    m.left()
+    collect(m.inspect, m.dig, id)
+  else
+    error("Invalid id " .. tostring(data.id))
+  end
 end

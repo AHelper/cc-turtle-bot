@@ -40,18 +40,24 @@ class PathingQueryHandler(JSONHandler):
       self.write_json({"type":"success","path":path})
 
 class PathingSetHandler(JSONHandler):
+  def initialize(self, sys):
+    self.sys = sys
+    
   def post(self):
     req = self.read_json()
     
     if req["value"] == None:
-      sys.pathing.set(int(req["x"]), int(req["y"]), int(req["z"]), None)
+      self.sys.pathing.set(int(req["x"]), int(req["y"]), int(req["z"]), None)
     else:
-      sys.pathing.set(int(req["x"]), int(req["y"]), int(req["z"]), int(req["value"]))
+      self.sys.pathing.set(int(req["x"]), int(req["y"]), int(req["z"]), int(req["value"]))
     
     self.write_json({"response":"success","message":"point set"})
 
 class PathingGetHandler(JSONHandler):
+  def initialize(self, sys):
+    self.sys = sys
+    
   def post(self):
     req = self.read_json()
     
-    self.write_json({"type":"success","value":sys.pathing.get(int(req["x"]), int(req["y"]), int(req["z"]))})
+    self.write_json({"type":"success","value":self.sys.pathing.get(int(req["x"]), int(req["y"]), int(req["z"]))})
