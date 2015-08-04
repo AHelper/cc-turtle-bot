@@ -27,29 +27,43 @@ local HOLE_DEPTH = 2
 local CEILING_HEIGHT = 10
 
 -- Returns true if it is a hole, false if it found ground
+-- If true, returned back up to where it was.
 -- Call with no arguments
 local function detectHole(depth)
   if not depth then
     depth = 0
-    local data = m.inspectDown()
-    
-    if not data then
-      if depth == HOLE_DEPTH then
+  end
+  local ok = m.down()
+  
+  if ok ~= m.OK then
+    return false
+  else
+    if depth == HOLE_DEPTH then
+      m.up()
+      return true
+    else
+      if detectHole(depth+1) then
+        m.up()
         return true
       else
-        m.down()
-        if detectHole(depth+1) then
-          m.up()
-          return true
-        else
-          return false
-        end
+        return false
       end
     end
+  end
 end
 
 local function detectCeiling()
   
+end
+
+local function doTurn(turn)
+  if turn == 1 then
+    m.left()
+    return 2
+  else
+    m.right()
+    return 1
+  end
 end
 
 function invoke(data)
@@ -58,9 +72,37 @@ function invoke(data)
   -- If the heading is not one of the 2 headings to go in
   
   local turn = 1
-  
-  -- Find the ground first
-  while true do
-    m.down()
+    
+  for x=1,data.steps,1 do
+    -- Find the ground first
+    while true do
+      local ok = m.down()
+      
+      if ok ~= m.OK then
+        log.debug("Found ground")
+        break
+      end
+    end
+    
+    local ok = m.forward()
+    
+    if ok ~= m.OK then
+      log.debug("Hit something, checking for ceiling")
+      detectCeiling()
+      turn = doTurn(turn)
+    else
+      local ok = m.inspectDown()
+      
+      if ok ~= nil then
+        log.debug("Nothing below me, checking for hole")
+        
+        local ok = detectHole()
+        
+        if ok then
+          m.back()
+          turn = doTurn(turn)
+        end
+      end
+    end
   end
 end

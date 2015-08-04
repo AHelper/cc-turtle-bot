@@ -41,6 +41,7 @@ local function init()
               print(k)
             end
             table.insert(actionNames, match)
+            log.info("Loaded action '"..match.."'")
           else
             log.warning("Action '"..match.."' has no invoke!")
           end

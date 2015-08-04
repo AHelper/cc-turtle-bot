@@ -31,10 +31,10 @@ local function place(inv)
   
   h = rest.post("turtle/"..id.."/register",
     {
-      "x":pos.x,
-      "y":pos.y,
-      "z":pos.z,
-      "facing":pos.facing
+      x=pos.x,
+      y=pos.y,
+      z=pos.z,
+      facing=pos.facing
     })
   
   if h == nil then

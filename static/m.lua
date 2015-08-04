@@ -160,7 +160,7 @@ end
 
 function up(times)
   if times == nil then
-    local times = 1
+    times = 1
   end
   while times ~= 0 do
     local ret = _up()
@@ -208,7 +208,7 @@ end
 
 function down(times)
   if times == nil then
-    local times = 1
+    times = 1
   end
   while times ~= 0 do
     local ret = _down()
@@ -241,15 +241,20 @@ end
 
 local function _forward()
   if turtle.detect() then
+      inspect()
     return BLOCK
   else
     if not turtle.forward() then
+      inspect()
       if turtle.detect() then
         return BLOCK
       else
         return MOB
       end
     else
+      inspect()
+      inspectUp()
+      inspectDown()
       return OK
     end
   end
@@ -257,7 +262,7 @@ end
 
 function forward(times)
   if times == nil then
-    local times = 1
+    times = 1
   end
   while times ~= 0 do
     local ret = _forward()
@@ -296,17 +301,24 @@ local function _back()
     return OK
   else
     turtle.turnLeft()
+    inspect()
     turtle.turnLeft()
     local ret = _forward()
-    turtle.turnRight()
-    turtle.turnRight()
+    inspect()
+    if ret then
+      inspectUp()
+      inspectDown()
+    end
+    turtle.turnLeft()
+    inspect()
+    turtle.turnLeft()
     return ret
   end
 end
 
 function back(times)
   if times == nil then
-    local times = 1
+    times = 1
   end
   while times ~= 0 do
     local ret = _back()
@@ -341,6 +353,7 @@ end
 
 function left()
   turtle.turnLeft()
+  inspect()
   if _facing ~= 1 then
     _facing = _facing - 1
   else
@@ -352,6 +365,7 @@ end
 
 function right()
   turtle.turnRight()
+  inspect()
   if _facing ~= 4 then
     _facing = _facing + 1
   else
