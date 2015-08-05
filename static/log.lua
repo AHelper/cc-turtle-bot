@@ -19,7 +19,7 @@ os.loadAPI("rest")
 os.loadAPI("config")
 
 local function sendLogMessage(msg, level,levelstr)
-  rest.post("logging/"..config.id.."/"..level,msg)
+  rest.api.logging.log(config.id, level, msg)
   print("["..levelstr.."] "..msg)
 end
 

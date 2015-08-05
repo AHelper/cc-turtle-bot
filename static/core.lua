@@ -34,21 +34,15 @@ log.debug(config.id)
 
 -- Are we new?
 os.sleep(1)
-h1 = rest.get("turtle/" .. config.id .. "/status")
+local h1 = rest.api.turtle.status(config.id)
 
 if h1 == nil then
   -- This is a new turtle!
   log.info("Attempting to register new turtle")
-  h2 = rest.post("turtle/"..config.id.."/register",
-    {
-      x=0,
-      y=0,
-      z=0,
-      facing=0
-    })
-  if h2 ~= nil then
+  local h2 = rest.api.turtle.register(config.id, 0, 0, 0, 0)
+  
+  if h2 then
     log.info("New turtle "..config.id.." registered")
-    h2:close()
     m.save()
   else
     log.critical("Can't make new turtle!")
@@ -57,29 +51,20 @@ else
   -- Load pos from file
   m.load()
   -- Get pos from server
-  h2 = rest.get("turtle/"..config.id.."/position")
+  local h2 = rest.api.turtle.position(config.id)
   
-  if h2 ~= nil then
-    j = textutils.unserialize(h2:readAll())
-    h2:close()
-    
-    if j.x ~= m.x() or j.y ~= m.y() or j.z ~= m.z() or j.facing ~= m.facing() then
+  if h2 ~= nil then    
+    if h2.x ~= m.x() or h2.y ~= m.y() or h2.z ~= m.z() or h2.facing ~= m.facing() then
       log.notice("Our position is newer than the server's")
-      h2 = rest.post("turtle/"..config.id.."/position", {
-        x=m.x(),
-        y=m.y(),
-        z=m.z(),
-        facing=m.facing()
-      })
-      h2:close()
+      h2 = rest.api.turtle.position(config.id, m.x(), m.y(), m.z(), m.facing())
     end
   else
     log.error("Failed to get position")
   end
 end
 
-actions.invoke("explore", {steps=25})
-actions.invoke("move",{x=0,y=0,z=0,tries=10})
+-- actions.invoke("explore", {steps=100})
+-- actions.invoke("move",{x=0,y=0,z=0,tries=100})
 
 log.debug("Done!")
 os.sleep(10)

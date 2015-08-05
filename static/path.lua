@@ -75,24 +75,7 @@ function pathAlong(points)
 end
 
 function findPath(x,y,z)
-  r=rest.post("pathing/query",{
-    source={
-      x=m.x(),
-      y=m.y(),
-      z=m.z()
-    },
-    destination={
-      x=x,
-      y=y,
-      z=z
-    }
-  },true)
-  
-  if not r then
-    return nil
-  else
-    return textutils.unserialize(r).path
-  end
+  return rest.api.pathing.query(m.x(), m.y(), m.z(), x, y, z)
 end
 
 function test()
@@ -105,16 +88,8 @@ function test()
   
   while m.x() ~= dest.x or m.y() ~= dest.y or m.z() ~= dest.z do
     log.debug("Trying to path")
-    h=rest.post("pathing/query",{
-      source={
-        x=m.x(),
-        y=m.y(),
-        z=m.z()
-      },
-      destination=dest
-    })
-    j=textutils.unserialize(h:readAll())
-    h:close()
-    log.debug("Result was "..tostring(pathAlong(j.path)))
+    local h = findPath(dest.x, dest.y, dest.z)
+    
+    log.debug("Result was "..tostring(pathAlong(h)))
   end
 end

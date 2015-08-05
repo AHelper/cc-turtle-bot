@@ -69,13 +69,20 @@ api = {
             end
           end,
     set = function(x,y,z,value)
-            post("pathing/set", {
+            return post("pathing/set", {
               x=x,
               y=y,
               z=z,
               value=value
             }, true)
           end,
+    setObsticle = function(x,y,z)
+                    return post("pathing/setObsticle", {
+                      x=x,
+                      y=y,
+                      z=z
+                    }, true)
+                  end,
     query = function(sx,sy,sz,dx,dy,dz)
               local str = post("pathing/query", {
                 source = {
@@ -96,5 +103,75 @@ api = {
                 return nil
               end
             end
+  },
+  turtle = {
+    register = function(id, x, y, z, facing)
+                 local str = post("turtle/"..id.."/register", {
+                   x=x,
+                   y=y,
+                   z=z,
+                   facing=facing
+                 }, true)
+                 
+                 if str then
+                   return textutils.unserialize(str).type == "success"
+                 else
+                   return nil
+                 end
+               end,
+    unregister = function(id)
+                   local str = post("turtle/"..id.."/unregister", {}, true)
+                  
+                   if str then
+                     return textutils.unserialize(str).type == "success"
+                   else
+                     return nil
+                   end
+                 end,
+    status = function(id)
+               local str = get("turtle/"..id.."/status", {}, true)
+
+               if str then
+                 return textutils.unserialize(str)
+               else
+                 return nil
+               end
+             end,
+    position = function(id, x, y, z, facing)
+                 local str
+                 if x == nil and y == nil and z == nil and facing == nil then
+                   str = get("turtle/"..id.."/position", {}, true)
+                 
+                   if str then
+                     return textutils.unserialize(str)
+                   else
+                     return nil
+                   end
+                 else
+                   str = post("turtle/"..id.."/position", {
+                     x=x,
+                     y=y,
+                     z=z,
+                     facing=facing
+                   }, true)
+                 
+                   if str then
+                     return textutils.unserialize(str).type == "success"
+                   else
+                     return nil
+                   end
+                 end
+               end,
+    success = function(id)
+                return post("turtle/"..id.."/success", {}, true)
+              end,
+    failure = function(id)
+                return post("turtle/"..id.."/failure", {}, true)
+              end
+  },
+  logging = {
+    log = function(id, level, msg)
+            return post("logging/"..id.."/"..level, msg, true)
+          end
   }
 }

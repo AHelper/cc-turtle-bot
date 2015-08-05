@@ -54,12 +54,7 @@ function invoke(data)
   for y=data.y,data.y+data.height,1 do
     for x=data.x,data.x+8,1 do
       for z=data.z,data.z+8,1 do
-        rest.post("pathing/set",{
-          x=x,
-          y=y,
-          z=z,
-          value=nil
-        }, true)
+        rest.api.pathing.set(x,y,z,nil)
       end
     end
   end

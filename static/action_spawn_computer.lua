@@ -24,25 +24,19 @@ os.loadAPI("rest")
 -- Turtle must have computer/turtle
 
 local function place(inv)
-  m.up(1)
+  m.up()
   m.place(inv)
-  id = m.getId()
-  pos = m.getRel()
+  local id = m.getId()
+  local pos = m.getRel()
   
-  h = rest.post("turtle/"..id.."/register",
-    {
-      x=pos.x,
-      y=pos.y,
-      z=pos.z,
-      facing=pos.facing
-    })
+  local h = rest.api.turtle.register(id, pos.x, pos.y, pos.z, pos.facing)
   
-  if h == nil then
+  if not h then
     error("Can't register turtle!")
   end
   
   m.on()
-  m.down(1)
+  m.down()
 end
 
 function invoke(data)
@@ -59,14 +53,14 @@ function invoke(data)
     if pcall(place, inv) then
       m.finish()
       log.info("Spawned turtle")
-      rest.get("turtle/"..config.id.."/success", true)
+      rest.api.turtle.success(config.id)
     else
       log.error("Could not spawn turtle")
-      rest.get("turtle/"..config.id.."/failure", true)
+      rest.api.turtle.failure(config.id)
     end
     m.setError(false)
   else
     log.error("Don't have needed blocks")
-    rest.get("turtle/"..config.id.."/failure", true)
+    rest.api.turtle.failure(config.id)
   end
 end

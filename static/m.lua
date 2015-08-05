@@ -38,12 +38,9 @@ RIGHT = 5
 local useError = false
 
 local function sendPos()
-  local r=rest.post("turtle/"..config.id.."/position",{
-    x=_x,y=_y,z=_z,facing=_facing
-  })
-  if r ~= nil then
-    r:close()
-  else
+  local r = rest.api.turtle.position(config.id, _x, _y, _z, _facing)
+  
+  if not r then
     log.error("sendPos: Failed to setPosition")
   end
 end
@@ -103,28 +100,17 @@ function setError(err)
 end
 
 function sendBlock(x,y,z,b)
-  local r=rest.post("pathing/set",{
-    x=x,
-    y=y,
-    z=z,
-    value=b
-  })
-  if r ~= nil then
-    r:close()
-  else
+  local r = rest.api.pathing.set(x, y, z, b)
+  
+  if not r then
     log.error("sendBlock failed")
   end
 end
 
 function sendObsticle(x,y,z)
-  local r=rest.post("pathing/setObsticle",{
-    x=x,
-    y=y,
-    z=z
-  })
-  if r ~= nil then
-    r:close()
-  else
+  local r = rest.api.pathing.setObsticle(x, y, z)
+  
+  if not r then
     log.error("sendObsticle failed")
   end
 end
