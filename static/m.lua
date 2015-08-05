@@ -26,6 +26,7 @@ local _facing = 1
 OK = 0
 BLOCK = 1
 MOB = 2
+FAIL_UNKNOWN = 10
 
 UP = 0
 DOWN = 1
@@ -175,6 +176,7 @@ function up(times)
       end
       if useError then
         error("up:BLOCK")
+      else
         return BLOCK
       end
     elseif ret == MOB then

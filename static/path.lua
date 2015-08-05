@@ -68,10 +68,10 @@ function pathAlong(points)
     
     if m.x() ~= v[1] or m.y() ~= v[2] or m.z() ~= v[3] then
       log.error("I am not where I am supposed to be. Should be at "..v[1]..","..v[2]..","..v[3].." but am at "..m.x()..","..m.y()..","..m.z())
-      return false
+      return m.FAIL_UNKNOWN
     end
   end
-  return true
+  return m.OK
 end
 
 function findPath(x,y,z)

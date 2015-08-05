@@ -27,10 +27,10 @@ os.loadAPI("log")
 --   tries: INT
 
 local function doMove(data)
-  local path = rest.api.pathing.query(m.x(),m.y(),m.z(),data.x,data.y,data.z)
+  local points = rest.api.pathing.query(m.x(),m.y(),m.z(),data.x,data.y,data.z)
   
-  if path then
-    return path.pathAlong(path)
+  if points then
+    return path.pathAlong(points)
   else
     return false
   end
@@ -39,7 +39,7 @@ end
 function invoke(data)
   for try=0,data.tries,1 do
     local r = doMove(data)
-    if r then
+    if r == m.OK then
       return true
     end
   end

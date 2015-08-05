@@ -79,6 +79,7 @@ else
 end
 
 actions.invoke("explore", {steps=25})
+actions.invoke("move",{x=0,y=0,z=0,tries=10})
 
 log.debug("Done!")
 os.sleep(10)

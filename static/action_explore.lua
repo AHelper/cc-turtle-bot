@@ -99,6 +99,10 @@ local function doTurn(turn)
   end
 end
 
+local function shouldTurn()
+  return math.random(20) == 1
+end
+
 function invoke(data)
   -- Pick a random direction (floating)
   -- Loop:
@@ -138,6 +142,10 @@ function invoke(data)
           turn = doTurn(turn)
         end
       end
+    end
+    
+    if shouldTurn() then
+      turn = doTurn(turn)
     end
   end
 end
