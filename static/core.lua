@@ -78,7 +78,7 @@ else
   end
 end
 
-actions.invoke("explore", {steps=10})
+actions.invoke("explore", {steps=25})
 
 log.debug("Done!")
 os.sleep(10)
