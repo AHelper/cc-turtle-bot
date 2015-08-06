@@ -19,6 +19,12 @@
 Control entrypoint for a single turtle.
 """
 class Turtle:
+  BUILDER = 1
+  MINER = 2
+  CRAFTER = 4
+  FORRESTER = 8
+  FARMER = 0x10
+  
   def __init__(self, unique_name, x, y, z, facing):
     self.x = x
     self.y = y
