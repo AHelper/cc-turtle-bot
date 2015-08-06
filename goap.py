@@ -3,7 +3,7 @@
 import copy
 
 """
-Variables are... weird.  They are dynamic and inspects the state of the system.
+Variables are... weird.  They are dynamic and inspect the state of the system.
 Like, the system knows exactly how many blocks of dirt are collected in storage blocks.
 But it also knows how many of those blocks are in use, and thus how many are available.
 """
@@ -60,6 +60,9 @@ class Goal:
     self.postreqs = list(postreqs)
     self.name = str(name)
     self.resolved = False
+    
+  def __str__(self):
+    return self.name
   
   def getPrereqs(self):
     return self.prereqs
@@ -90,6 +93,9 @@ class Requirement:
   def __init__(self, name=""):
     self.name = name
     
+  def __str__(self):
+    return self.name
+    
   def canClaim(self):
     raise NotImplementedError()
   
@@ -115,6 +121,9 @@ class Action:
   def __init__(self, name=""):
     self.name = name
     
+  def __str__(self):
+    return self.name
+  
   def getHelpfulness(self, goal):
     raise NotImplementedError()
       
@@ -126,50 +135,99 @@ class VariableIncreaseAction(Action):
   
   def getHelpfulness(self, req):
     if isinstance(req, VariableRequirement):
-      if req.comparison in ["=", ">", ">="]:
-        if req.variable == self.variable:
+      if req.variable == self.variable:
+        if req.comparison in ["=", ">", ">="]:
           return self.amount
+        elif req.comparison in ["<", "<="]:
+          return -self.amount
+    elif isinstance(req, VariableDecreaseAction):
+      if req.variable == self.variable:
+        return -req.amount
+    return 0
+      
+class VariableDecreaseAction(Action):
+  def __init__(self, name, variable, amount):
+    Action.__init__(self, name=name)
+    self.variable = variable
+    self.amount = amount
+  
+  def getHelpfulness(self, req):
+    if isinstance(req, VariableRequirement):
+      if req.variable == self.variable:
+        if req.comparison in ["=", "<", "<="]:
+          return self.amount
+        elif req.comparison in [">", ">="]:
+          return -self.amount
+    elif isinstance(req, VariableIncreaseAction):
+      if req.variable == self.variable:
+        return -req.amount
     return 0
   
-needsMiner = VariableRequirement("needs miner", "turtles.miner.free", ">=", NumericVariable("", 1))
-needsBuilder = VariableRequirement("needs miner", "turtles.builder.free", ">=", NumericVariable("", 1))
-needsHouseResources = VariableRequirement("needs house resources", "resources.dirt", ">=", NumericVariable("",5))
-getsDirt = VariableIncreaseAction("gets dirt", "resources.dirt", 1)
-getsHouse = VariableIncreaseAction("gets house", "buildings.house", 1)
-gatherDirt = BasicGoal("gather dirt", [needsMiner], [getsDirt])
+needsMiner = VariableRequirement("need miner", "turtles.miner.free", ">=", NumericVariable("", 1))
+needsBuilder = VariableRequirement("need miner", "turtles.builder.free", ">=", NumericVariable("", 1))
+needsHouseResources = VariableRequirement("need house resources", "resources.dirt", ">=", NumericVariable("",5))
+needsMine = VariableRequirement("need mine", "buildings.mine", ">=", NumericVariable("",1))
+getsDirt = VariableIncreaseAction("get dirt", "resources.dirt", 1)
+gets5Dirt = VariableIncreaseAction("get 5 dirt", "resources.dirt", 5)
+getsHouse = VariableIncreaseAction("get house", "buildings.house", 1)
+getsMine = VariableIncreaseAction("get mine", "buildings.mine", 1)
+losesHouse = VariableDecreaseAction("lose house", "buildings.house", 1)
+needsHouse = VariableRequirement("need house", "buildings.house", "==", 1)
+buildMine = BasicGoal("build mine", [], [getsMine])
+gatherDirt = BasicGoal("gather dirt", [needsMiner, needsMine], [getsDirt])
+deconHouse = BasicGoal("decon house", [needsMiner, needsHouse], [gets5Dirt, losesHouse])
 buildHouse = BasicGoal("build house", [needsBuilder, needsHouseResources], [getsHouse])
-needsHouse = VariableRequirement("needs house", "buildings.house", "==", 1)
 
 variables["turtles.miner.free"] = NumericVariable("",1)
 variables["turtles.builder.free"] = NumericVariable("",1)
 variables["buildings.house"] = NumericVariable("",0)
 variables["resources.dirt"] = NumericVariable("",0)
 
-goals = [gatherDirt, buildHouse]
+goals = [gatherDirt, buildHouse, deconHouse, buildMine]
 currentgoals = []
 
 def addGoal(goal):
   currentgoals.append(copy.deepcopy(goal))
 
+def isCounterProductive(prereqs, postreqs):
+  for req in prereqs:
+    for action in postreqs:
+      if action.getHelpfulness(req) < 0:
+        return True
+  return False
+
 def resolveGoal(g):
   all = True
   score = 0
   reqActions = dict()
+  print("Trying to " + str(g))
   for req in g.getPrereqs():
-    print("looking at req " + req.name)
+    print("looking at requirement for " + req.name)
     if req.canClaim():
-      print("Can already claim it")
+      print("  Can already claim it")
       reqActions[req] = None
     else:
-      reqActions[req] = (0,None)
+      reqActions[req] = []
       for goal2 in goals:
         for action in goal2.getPostreqs():
           s = action.getHelpfulness(req)
           if s > 0:
-            print("action " + action.name + " from " + goal2.name + " has a helpfulness of " + str(s))
-            if s > reqActions[req][0]:
-              reqActions[req] = (s, action)
+            print("  action " + action.name + " from " + goal2.name + " has a helpfulness of " + str(s))
+            if isCounterProductive(g.getPostreqs(), goal2.getPostreqs()):
+              print("    but action " + action.name + " is counter-productive!")
+            else:
+              reqActions[req].append((s, action, goal2))
+      reqActions[req] = sorted(reqActions[req], key = lambda x: x[0], reverse=True)
+  
   # We can pick goals from our actions list. Find each variation and sort by difficulty
+  neededGoals = []
+  for reqs in reqActions.itervalues():
+    if reqs != None and len(reqs) > 0:
+      neededGoal = reqs[0]
+      print("I need " + str(neededGoal[2]) + " to " + str(neededGoal[1]) + " (helpfulness " + str(neededGoal[0]) + ")")
+      neededGoals.append(neededGoal[2])
+      neededGoals.extend(resolveGoal(neededGoal[2]))
+  return neededGoals
 
 addGoal(buildHouse)
 resolveGoal(currentgoals[0])
