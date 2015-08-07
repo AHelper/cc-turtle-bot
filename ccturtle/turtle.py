@@ -15,15 +15,27 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+def designationToStr(designation):
+  if designation == Turtle.MINER:
+    return "miner"
+  elif designation == Turtle.CRAFTER:
+    return "crafter"
+  elif designation == Turtle.FORRESTER:
+    return "forrester"
+  elif designation == Turtle.FARMER:
+    return "farmer"
+  elif designation == Turtle.BUILDER:
+    return "builder"
 """
 Control entrypoint for a single turtle.
 """
 class Turtle:
-  BUILDER = 1
-  MINER = 2
-  CRAFTER = 4
-  FORRESTER = 8
-  FARMER = 0x10
+  MINER =     0x01
+  CRAFTER =   0x02
+  FORRESTER = 0x04
+  FARMER =    0x08
+  BUILDER =   MINER | FORRESTER | FARMER
+  
   
   def __init__(self, unique_name, x, y, z, facing):
     self.x = x
@@ -53,7 +65,10 @@ class Turtle:
     """
     Handles a response from the Lua code
     """
-    pass
+    if self.goal:
+      return self.goal.handleReply(response)
+    else:
+      return None
   
   def setPosition(self, x, y, z, facing):
     self.x = x
@@ -73,7 +88,10 @@ class Turtle:
     """
     Generates a response for the turtle for what it should do
     """
-    pass
+    if self.goal:
+      return self.goal.getResponse(self)
+    else:
+      return None
   
   def getCurrentTaskInfo(self):
     pass
@@ -84,3 +102,8 @@ class Turtle:
   def getHumanReadableFutureTasks(self):
     return "More faffing about"
   
+  def setGoal(self, goal):
+    self.currentGoal = goal
+    
+  def getGoal(self, goal):
+    return self.currentGoal

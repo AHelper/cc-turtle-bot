@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import copy
-from ccturtle.turtle import Turtle
+from ccturtle.turtle import Turtle, designationToStr
 
 class System:
   def __init__(self):
@@ -86,7 +86,7 @@ class TurtlesMinersVariable(NumericVariable):
     turtles = self.sys.getTurtles()
     count = 0
     for turtle in turtles:
-      if turtle.getDesignation() == Turtle.MINER:
+      if turtle.getDesignation() & Turtle.MINER:
         count += 1
     return count
   
@@ -99,7 +99,7 @@ class TurtlesMinersFreeVariable(NumericVariable):
     turtles = self.sys.getTurtles()
     count = 0
     for turtle in turtles:
-      if turtle.getDesignation() == Turtle.MINER:
+      if turtle.getDesignation() & Turtle.MINER:
         if not self.sys.isClaimed(turtle):
           count += 1
     return count
@@ -112,9 +112,28 @@ class Goal:
     self.name = str(name)
     self.resolved = False
     self.goals = []
+    self.variables = dict()
     
   def __str__(self):
     return self.name
+  
+  def __getitem__(self, key):
+    return self.variables[key]
+  
+  def __setitem__(self, key, value):
+    self.variables[key] = value
+    
+  def __deepcopy__(self, memo):
+    name = copy.deepcopy(self.name, memo)
+    requirements = copy.deepcopy(self.requirements, memo)
+    actions = copy.deepcopy(self.actions, memo)
+    results = copy.deepcopy(self.results, memo)
+    
+    for array in [requirements, actions, results]:
+      for obj in array:
+        obj.setParentGoal(self)
+    
+    return Goal(name, requirements, actions, results)
   
   def getPrereqs(self):
     return self.requirements
@@ -147,6 +166,17 @@ class Goal:
   def addChildGoal(self, goal):
     self.goals.append(goal)
     
+  def getResponse(self, turtle):
+    for req in self.requirements:
+      if not req.isClaimed():
+        return False
+    # Get the next action to perform and send its command
+    return "Response!"
+  
+  def handleReply(self, turtle, reply):
+    print("Got a reply!")
+    return None
+        
   def __str__(self):
     return self.name
   
@@ -160,15 +190,22 @@ class BasicGoal(Goal):
 class Requirement:
   def __init__(self, name=""):
     self.name = name
+    self.claimed = False
     
   def __str__(self):
     return self.name
+    
+  def setParentGoal(self, goal):
+    self.goal = goal
     
   def canClaim(self):
     raise NotImplementedError()
   
   def claim(self):
     raise NotImplementedError()
+  
+  def isClaimed(self):
+    return self.claimed
     
 class VariableRequirement(Requirement):
   def __init__(self, name, variable, comparison, value):
@@ -199,15 +236,27 @@ class TurtleClaimRequirement(VariableRequirement):
   def claim(self):
     turtles = self.sys.getTurtles()
     for turtle in turtles:
-      if turtle.getDesignation() == self.designation:
+      print(turtle.getDesignation())
+      print(self.designation)
+      if turtle.getDesignation() & self.designation:
         # Claim
         self.sys.claimTurtle(turtle)
         self.turtle = turtle
+        self.claimed = True
+        
+        key = ("turtle." + designationToStr(self.designation))
+        if key not in self.goal:
+          self.goal[key] = []
+        self.goal[key].append(turtle)
+        return True
+    return False
     
 class Action:
-  def __init__(self, name="", goal=None):
+  def __init__(self, name=""):
     self.name = name
     self.completed = False
+    
+  def setParentGoal(self, goal):
     self.goal = goal
     
   def isCompleted(self):
@@ -237,6 +286,9 @@ class Result:
     
   def __str__(self):
     return self.name
+    
+  def setParentGoal(self, goal):
+    self.goal = goal
   
   def getHelpfulness(self, goal):
     raise NotImplementedError()
@@ -298,6 +350,18 @@ variables["turtles.builder.free"] = TurtlesMinersVariable(sys)
 variables["buildings.house"] = NumericVariable("",0)
 variables["resources.dirt"] = NumericVariable("",0)
 
+"""
+Actions need to know certain things before running. Reqs and other actions should set variables in the goal
+that all other actions can use.
+
+Things like building something, it needs a turtle. Req. will claim one and make it available to the goal.
+Next, a location to build needs to be determined. So, a req to find a building place will set the location.
+
+These are all GENERIC!  Actions can be mixed and matched and still use common variables to get the job done.
+That said, for a requirement to find a storage containing X, you can then use the build action to build at that position.
+tl;dr, goals must be very specific and limited in what they do.
+"""
+
 goals = [gatherDirt, buildHouse, deconHouse, buildMine]
 currentgoals = []
 
@@ -349,4 +413,19 @@ def resolveGoal(g):
 addGoal(buildHouse)
 resolveGoal(currentgoals[0])
 
+leaf = currentgoals[0].getChildGoals()[0].getChildGoals()[0]
+# You don't need to mark that you are working on this goal because there should only be one
+# scope with this goal in it.
+print("------")
+for req in leaf.getPrereqs():
+  print(req)
+  print("Can claim: " + str(req.canClaim()))
+  if not req.canClaim():
+    print("Goal is invalid, rethink")
+    break
+  print(req.claim())
+  if req.name == "need builder":
+    print(req.turtle)
+  else:
+    print("Not a builder")
 # Now, to get things done, get a leaf goal, make sure it is claimable, claim it if not already, get an action not finished and perform it.
