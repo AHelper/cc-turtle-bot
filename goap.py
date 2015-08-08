@@ -104,6 +104,16 @@ class TurtlesMinersFreeVariable(NumericVariable):
           count += 1
     return count
 
+class GoalComponent:
+  def __init__(self):
+    self.goal = None
+    
+  def setParentGoal(self, goal):
+    self.goal = goal
+    
+  def getParentGoal(self):
+    return self.goal
+  
 class Goal:
   def __init__(self, name="", requirements=[], actions=[], results=[]):
     self.requirements = list(requirements)
@@ -125,6 +135,9 @@ class Goal:
   
   def __setitem__(self, key, value):
     self.variables[key] = value
+    
+  def __contains__(self, key):
+    return key in self.variables
     
   def __deepcopy__(self, memo):
     name = copy.deepcopy(self.name, memo)
@@ -177,8 +190,9 @@ class Goal:
         return False
     # Get the next action to perform and send its command
     for action in self.actions:
-      if action
-    return "Response!"
+      if not action.isInvoked():
+        return action.invoke()
+    return "I guess this goal is done?"
   
   def handleReply(self, turtle, reply):
     print("Got a reply!")
@@ -194,16 +208,14 @@ class BasicGoal(Goal):
   def __init__(self, name, requirements, actions, results):
     Goal.__init__(self, name, requirements, actions, results)
     
-class Requirement:
+class Requirement(GoalComponent):
   def __init__(self, name=""):
+    GoalComponent.__init__(self)
     self.name = name
     self.claimed = False
     
   def __str__(self):
     return self.name
-    
-  def setParentGoal(self, goal):
-    self.goal = goal
     
   def canClaim(self):
     raise NotImplementedError()
@@ -226,6 +238,32 @@ class VariableRequirement(Requirement):
       var = variables[self.variable]
 
       return var.doComparison(self.comparison, self.value)
+    else:
+      return False
+    
+  def claim(self):
+    if self.variable in variables:
+      var = variables[self.variable]
+      var.set(var.get() - self.value.get())
+      self.claimed = True
+      return True
+    else:
+      return False
+    
+class PlotRequirement(Requirement):
+  def __init__(self, name, size):
+    Requirement.__init__(self, name=name)
+    self.size = size
+    self.variable = "plots.{0}.{0}".format(size)
+    
+  def canClaim(self):
+    return True
+  
+  def claim(self):
+    if self.canClaim():
+      self.goal["pos"] = [0,0,0]
+      self.claimed = True
+      return False
     else:
       return False
     
@@ -252,21 +290,20 @@ class TurtleClaimRequirement(VariableRequirement):
         turtle.setGoal(self.goal)
         self.claimed = True
         
-        key = ("turtle." + designationToStr(self.designation))
+        #key = ("turtle." + designationToStr(self.designation))
+        key = "turtle"
         if key not in self.goal:
           self.goal[key] = []
         self.goal[key].append(turtle)
         return True
     return False
     
-class Action:
+class Action(GoalComponent):
   def __init__(self, name=""):
+    GoalComponent.__init__(self)
     self.name = name
     self.completed = False
     self.invoked = False
-    
-  def setParentGoal(self, goal):
-    self.goal = goal
     
   def isCompleted(self):
     return self.completed
@@ -281,26 +318,34 @@ class Action:
     raise NotImplementedError()
   
 class MoveAction(Action):
-  def __init__(self, name, goal):
-    Action.__init__(self, name, goal)
+  def __init__(self, name):
+    Action.__init__(self, name)
     self.turtle = None
     
   def invoke(self):
-    for req in self.goal.getPrereqs():
-      if isinstance(req, TurtleClaimRequirement):
-        print("Found a turtle that I can move!")
-        return
-    raise RuntimeError("No turtle found that I can move")
+    #for req in self.goal.getPrereqs():
+      #if isinstance(req, TurtleClaimRequirement):
+        #print("Found a turtle that I can move!")
+        #return
+    print(self.goal.variables)
+    if "turtle" not in self.goal:
+      raise RuntimeError("No turtle found that I can move")
+    if "pos" not in self.goal:
+      raise RuntimeError("No destination found for moving")
+    
+    return {"turtle":self.goal["turtle"][0],"destination":self.goal["pos"]}
+  
+class FlattenAction(Action):
+  def __init__(self, name):
+    Action.__init__(self, name)
 
-class Result:
+class Result(GoalComponent):
   def __init__(self, name=""):
+    GoalComponent.__init__(self)
     self.name = name
     
   def __str__(self):
     return self.name
-    
-  def setParentGoal(self, goal):
-    self.goal = goal
   
   def getHelpfulness(self, goal):
     raise NotImplementedError()
@@ -346,13 +391,14 @@ needsMiner = TurtleClaimRequirement("need miner", Turtle.MINER, sys)
 needsBuilder = TurtleClaimRequirement("need builder", Turtle.BUILDER, sys)
 needsHouseResources = VariableRequirement("need house resources", "resources.dirt", ">=", NumericVariable("",5))
 needsMine = VariableRequirement("need mine", "buildings.mine", ">=", NumericVariable("",1))
+needs16Plot = PlotRequirement("need 16x16 plot", 16)
 getsDirt = VariableIncreaseAction("get dirt", "resources.dirt", 1)
 gets5Dirt = VariableIncreaseAction("get 5 dirt", "resources.dirt", 5)
 getsHouse = VariableIncreaseAction("get house", "buildings.house", 1)
 getsMine = VariableIncreaseAction("get mine", "buildings.mine", 1)
 losesHouse = VariableDecreaseAction("lose house", "buildings.house", 1)
 needsHouse = VariableRequirement("need house", "buildings.house", "==", 1)
-buildMine = BasicGoal("build mine", [needsBuilder], [], [getsMine])
+buildMine = BasicGoal("build mine", [needsBuilder, needs16Plot], [MoveAction("move turtle to mine"), FlattenAction("flatten mine surface")], [getsMine])
 gatherDirt = BasicGoal("gather dirt", [needsMiner, needsMine], [], [getsDirt])
 deconHouse = BasicGoal("decon house", [needsMiner, needsHouse], [], [gets5Dirt, losesHouse])
 buildHouse = BasicGoal("build house", [needsBuilder, needsHouseResources], [], [getsHouse])
@@ -361,6 +407,7 @@ variables["turtles.miner.free"] = TurtlesMinersFreeVariable(sys)
 variables["turtles.builder.free"] = TurtlesMinersVariable(sys)
 variables["buildings.house"] = NumericVariable("",0)
 variables["resources.dirt"] = NumericVariable("",0)
+variables["plots.16.16"] = NumericVariable("",1)
 
 """
 Actions need to know certain things before running. Reqs and other actions should set variables in the goal
@@ -431,17 +478,17 @@ leaf = copy.deepcopy(currentgoals[0].getChildGoals()[0].getChildGoals()[0])
 print("------")
 for req in leaf.getPrereqs():
   print(req)
-  print("Can claim: " + str(req.canClaim()))
+  print("  Can claim: " + str(req.canClaim()))
   if not req.canClaim():
-    print("Goal is invalid, rethink")
+    print("  Goal is invalid, rethink")
     break
-  print(req.claim())
+  print("  "+str(req.claim()))
   if req.name == "need builder":
-    print(req.turtle)
-    print(req.claimed)
+    print("  "+str(req.turtle))
+    print("  "+str(req.claimed))
     turtle = req.turtle
   else:
-    print("Not a builder")
+    print("  Not a builder")
 # Now, to get things done, get a leaf goal, make sure it is claimable, claim it if not already, get an action not finished and perform it.
 
 print(turtle.getResponse())
