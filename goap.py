@@ -118,7 +118,10 @@ class Goal:
     return self.name
   
   def __getitem__(self, key):
-    return self.variables[key]
+    if key not in self.variables:
+      raise IndexError(key)
+    else:
+      return self.variables[key]
   
   def __setitem__(self, key, value):
     self.variables[key] = value
@@ -128,12 +131,13 @@ class Goal:
     requirements = copy.deepcopy(self.requirements, memo)
     actions = copy.deepcopy(self.actions, memo)
     results = copy.deepcopy(self.results, memo)
+    newGoal = Goal(name, requirements, actions, results)
     
     for array in [requirements, actions, results]:
       for obj in array:
-        obj.setParentGoal(self)
+        obj.setParentGoal(newGoal)
     
-    return Goal(name, requirements, actions, results)
+    return newGoal
   
   def getPrereqs(self):
     return self.requirements
@@ -169,8 +173,11 @@ class Goal:
   def getResponse(self, turtle):
     for req in self.requirements:
       if not req.isClaimed():
+        print(str(req) + " is not claimed, can't generate response")
         return False
     # Get the next action to perform and send its command
+    for action in self.actions:
+      if action
     return "Response!"
   
   def handleReply(self, turtle, reply):
@@ -242,6 +249,7 @@ class TurtleClaimRequirement(VariableRequirement):
         # Claim
         self.sys.claimTurtle(turtle)
         self.turtle = turtle
+        turtle.setGoal(self.goal)
         self.claimed = True
         
         key = ("turtle." + designationToStr(self.designation))
@@ -255,12 +263,16 @@ class Action:
   def __init__(self, name=""):
     self.name = name
     self.completed = False
+    self.invoked = False
     
   def setParentGoal(self, goal):
     self.goal = goal
     
   def isCompleted(self):
     return self.completed
+  
+  def isInvoked(self):
+    return self.invoked
   
   def invoke(self):
     raise NotImplementedError()
@@ -413,7 +425,7 @@ def resolveGoal(g):
 addGoal(buildHouse)
 resolveGoal(currentgoals[0])
 
-leaf = currentgoals[0].getChildGoals()[0].getChildGoals()[0]
+leaf = copy.deepcopy(currentgoals[0].getChildGoals()[0].getChildGoals()[0])
 # You don't need to mark that you are working on this goal because there should only be one
 # scope with this goal in it.
 print("------")
@@ -426,6 +438,10 @@ for req in leaf.getPrereqs():
   print(req.claim())
   if req.name == "need builder":
     print(req.turtle)
+    print(req.claimed)
+    turtle = req.turtle
   else:
     print("Not a builder")
 # Now, to get things done, get a leaf goal, make sure it is claimable, claim it if not already, get an action not finished and perform it.
+
+print(turtle.getResponse())

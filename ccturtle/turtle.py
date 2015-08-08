@@ -65,8 +65,8 @@ class Turtle:
     """
     Handles a response from the Lua code
     """
-    if self.goal:
-      return self.goal.handleReply(response)
+    if self.currentGoal:
+      return self.currentGoal.handleReply(response)
     else:
       return None
   
@@ -88,8 +88,8 @@ class Turtle:
     """
     Generates a response for the turtle for what it should do
     """
-    if self.goal:
-      return self.goal.getResponse(self)
+    if self.currentGoal:
+      return self.currentGoal.getResponse(self)
     else:
       return None
   
