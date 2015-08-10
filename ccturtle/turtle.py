@@ -66,7 +66,7 @@ class Turtle:
     Handles a response from the Lua code
     """
     if self.currentGoal:
-      return self.currentGoal.handleReply(response)
+      return self.currentGoal.handleReply(self, response)
     else:
       return None
   

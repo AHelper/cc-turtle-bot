@@ -492,3 +492,4 @@ for req in leaf.getPrereqs():
 # Now, to get things done, get a leaf goal, make sure it is claimable, claim it if not already, get an action not finished and perform it.
 
 print(turtle.getResponse())
+print(turtle.handleResponse({"type":"success"}))
