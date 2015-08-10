@@ -3,6 +3,13 @@
 import copy
 from ccturtle.turtle import Turtle, designationToStr
 
+# Temporary helper method, move to something more elegant in the future
+rpc_call_id = 0
+def genRPCCall(action_name, parameters):
+  global rpc_call_id
+  rpc_call_id += 1
+  return {"action":action_name, "parameters":parameters, "id":rpc_call_id}
+
 class System:
   def __init__(self):
     self.turtles = [Turtle("1", 0, 0, 0, 0), Turtle("2", 0, 0, 0, 0)]
@@ -123,6 +130,7 @@ class Goal:
     self.resolved = False
     self.goals = []
     self.variables = dict()
+    self.turtletoaction = dict()
     
   def __str__(self):
     return self.name
@@ -191,12 +199,19 @@ class Goal:
     # Get the next action to perform and send its command
     for action in self.actions:
       if not action.isInvoked():
-        return action.invoke()
+        self.turtletoaction[turtle] = action
+        print(action)
+        return action.invoke(turtle)
+    self.resolved = True
     return "I guess this goal is done?"
   
   def handleReply(self, turtle, reply):
     print("Got a reply!")
-    return None
+    if turtle not in self.turtletoaction:
+      raise LookupError("Turtle not invoking anything")
+    else:
+      action = self.turtletoaction[turtle]
+      return action.handleResponse(turtle, reply)
         
   def __str__(self):
     return self.name
@@ -311,10 +326,10 @@ class Action(GoalComponent):
   def isInvoked(self):
     return self.invoked
   
-  def invoke(self):
+  def invoke(self, turtle):
     raise NotImplementedError()
   
-  def handleResponse(self):
+  def handleResponse(self, turtle, response):
     raise NotImplementedError()
   
 class MoveAction(Action):
@@ -322,22 +337,77 @@ class MoveAction(Action):
     Action.__init__(self, name)
     self.turtle = None
     
-  def invoke(self):
-    #for req in self.goal.getPrereqs():
-      #if isinstance(req, TurtleClaimRequirement):
-        #print("Found a turtle that I can move!")
-        #return
-    print(self.goal.variables)
+  def validate(self, turtle):
     if "turtle" not in self.goal:
       raise RuntimeError("No turtle found that I can move")
     if "pos" not in self.goal:
       raise RuntimeError("No destination found for moving")
-    
-    return {"turtle":self.goal["turtle"][0],"destination":self.goal["pos"]}
+    if turtle != self.goal["turtle"][0]:
+      return False
+    return True
+  
+  def invoke(self, turtle):
+    #for req in self.goal.getPrereqs():
+      #if isinstance(req, TurtleClaimRequirement):
+        #print("Found a turtle that I can move!")
+        #return
+    if not self.validate(turtle):
+      return False
+    else:
+      self.invoked = True
+      #return {"turtle":self.goal["turtle"][0],"destination":self.goal["pos"]}
+      return genRPCCall("move", {"destination": self.goal["pos"]})
+  
+  def handleResponse(self, turtle, response):
+    if not self.validate(turtle):
+      return False
+    else:
+      if response["type"] == "success":
+        self.completed = True
+        return {}
+      else:
+        self.invoked = False
+        self.completed = False
+        return {"retry":True}
   
 class FlattenAction(Action):
-  def __init__(self, name):
+  def __init__(self, name, up=0, down=0, size=8):
     Action.__init__(self, name)
+    self.up = up
+    self.down = down
+    self.size = size
+    
+  def validate(self, turtle):
+    if "turtle" not in self.goal:
+      raise RuntimeError("No turtle found")
+    if turtle != self.goal["turtle"][0]:
+      return False
+    return True
+  
+  def invoke(self, turtle):
+    if not self.validate(turtle):
+      return False
+    else:
+      if "flatten.up" in self.goal:
+        self.up = int(self.goal["flatten.up"])
+      if "flatten.down" in self.goal:
+        self.down = int(self.goal["flatten.down"])
+      if "flatten.size" in self.goal:
+        self.size = int(self.goal["flatten.size"])
+      self.invoked = True
+      return genRPCCall("flatten", {"up":self.up, "down":self.down, "size":self.size})
+  
+  def handleResponse(self, turtle, response):
+    if not self.validate(turtle):
+      return False
+    else:
+      if response["type"] == "success":
+        self.completed = True
+        return {}
+      else:
+        self.invoked = False
+        self.completed = False
+        return {"retry":True}
 
 class Result(GoalComponent):
   def __init__(self, name=""):
@@ -491,5 +561,27 @@ for req in leaf.getPrereqs():
     print("  Not a builder")
 # Now, to get things done, get a leaf goal, make sure it is claimable, claim it if not already, get an action not finished and perform it.
 
+print("Response:")
 print(turtle.getResponse())
 print(turtle.handleResponse({"type":"success"}))
+print("Response:")
+print(turtle.getResponse())
+print(turtle.handleResponse({"type":"success"}))
+print("Response:")
+print(turtle.getResponse())
+
+print("At this point, this goal is all out of things to do")
+
+# Prototype for the resolver class
+class GoalResolver:
+  def addGoal(self, goal):
+    pass
+  
+  def resolveGoals(self):
+    pass
+  
+  # Dict of goal to array of child goals
+  def getGoals(self):
+    pass
+  
+  # More?
