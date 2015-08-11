@@ -131,6 +131,7 @@ class Goal:
     self.goals = []
     self.variables = dict()
     self.turtletoaction = dict()
+    self.isResolving = True
     
   def __str__(self):
     return self.name
@@ -182,6 +183,9 @@ class Goal:
   def isResolved(self):
     return self.resolved
   
+  def isResolving(self):
+    return self.isResolving
+  
   def getActions(self):
     return self.actions
   
@@ -201,6 +205,7 @@ class Goal:
       if not action.isInvoked():
         self.turtletoaction[turtle] = action
         print(action)
+        self.isResolving = True
         return action.invoke(turtle)
     self.resolved = True
     return "I guess this goal is done?"
@@ -574,14 +579,80 @@ print("At this point, this goal is all out of things to do")
 
 # Prototype for the resolver class
 class GoalResolver:
-  def addGoal(self, goal):
-    pass
+  def __init__(self):
+    self.currentGoals = []
+    self.allGoals = []
+    
+
+  def __isCounterProductive(self, prereqs, postreqs):
+    for req in prereqs:
+      for action in postreqs:
+        if action.getHelpfulness(req) < 0:
+          return True
+    return False
   
-  def resolveGoals(self):
-    pass
+  def doGoal(self, goal):
+    self.currentGoals.append(goal)
+  
+  def addGoal(self, goal):
+    self.allGoals.append(goal)
+  
+  def __resolve(self, goal):
+    all = True
+    score = 0
+    reqActions = dict()
+    print("Trying to " + str(g))
+    for req in g.getPrereqs():
+      print("looking at requirement for " + req.name)
+      if req.canClaim():
+        print("  Can already claim it")
+        reqActions[req] = None
+      else:
+        reqActions[req] = []
+        for goal2 in goals:
+          for action in goal2.getPostreqs():
+            s = action.getHelpfulness(req)
+            if s > 0:
+              print("  action " + action.name + " from " + goal2.name + " has a helpfulness of " + str(s))
+              if isCounterProductive(g.getPostreqs(), goal2.getPostreqs()):
+                print("    but action " + action.name + " is counter-productive!")
+              else:
+                reqActions[req].append((s, action, goal2))
+        reqActions[req] = sorted(reqActions[req], key = lambda x: x[0], reverse=True)
+    
+    # We can pick goals from our actions list. Find each variation and sort by difficulty
+    neededGoals = []
+    for reqs in reqActions.itervalues():
+      if reqs != None and len(reqs) > 0:
+        neededGoal = reqs[0]
+        print("I need " + str(neededGoal[2]) + " to " + str(neededGoal[1]) + " (helpfulness " + str(neededGoal[0]) + ")")
+        neededGoals.append(neededGoal[2])
+        goal = copy.deepcopy(neededGoal[2])
+        g.addChildGoal(goal)
+        resolveGoal(goal)
+    return neededGoals
+  
+  def resolveGoals(self, system):
+    for goal in self.currentGoals:
+      if goal.
   
   # Dict of goal to array of child goals
   def getGoals(self):
-    pass
+    def recGetGoals(goal):
+      if len(goal.getChildGoals()) == 0:
+        return {}
+      else:
+        ret = {}
+        for child in goal.getChildGoals():
+          ret[child] = recGetGoals(child)
+        return ret
+        
+    ret = {}
+    for goal in self.currentGoals:
+      ret[goal] = recGetGoals(goal)
+    return ret
+  
+  def getAllGoals(self):
+    return list(self.allGoals)
   
   # More?
