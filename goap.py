@@ -592,7 +592,8 @@ class GoalResolver:
     return False
   
   def doGoal(self, goal):
-    self.currentGoals.append(goal)
+    self.currentGoals.append(copy.deepcopy(goal))
+    self.resolveGoals()
   
   def addGoal(self, goal):
     self.allGoals.append(goal)
@@ -632,9 +633,12 @@ class GoalResolver:
         resolveGoal(goal)
     return neededGoals
   
-  def resolveGoals(self, system):
+  def resolveGoals(self):
+    # For all goals added, resolve any that are yet to be resolved
+    # For all goals that are done, remove them from their parent.
     for goal in self.currentGoals:
-      if goal.
+      if not goal.isResolving():
+        self.__resolve(goal)
   
   # Dict of goal to array of child goals
   def getGoals(self):
@@ -656,3 +660,5 @@ class GoalResolver:
     return list(self.allGoals)
   
   # More?
+  # Maybe system shouldn't be passed in on creation of goals, actions, reqs, res.
+  #   This class can add them when they get stored.
