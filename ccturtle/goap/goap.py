@@ -1,3 +1,20 @@
+# cc-turtle-bot
+# Copyright (C) 2015 Collin Eggert
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 #!/usr/bin/env python
 
 import copy
@@ -16,7 +33,14 @@ class System:
     self.turtles[0].setDesignation(Turtle.MINER)
     self.turtles[1].setDesignation(Turtle.CRAFTER)
     self.claims = dict()
+    self.variables = dict()
   
+  def addTurtle(self, turtle):
+    self.turtles.append(turtle)
+    
+  def delTurtle(self, turtle):
+    self.turtles.remove(turtle)
+    
   def claimTurtle(self, turtle):
     print("SYS: Claiming turtle")
     self.claims[turtle] = True
@@ -31,8 +55,6 @@ class System:
   def getTurtles(self):
     print("SYS: Getting turtles")
     return self.turtles
-  
-variables = dict()
 
 """
 Variables are... weird.  They are dynamic and inspect the state of the system.
@@ -114,12 +136,18 @@ class TurtlesMinersFreeVariable(NumericVariable):
 class GoalComponent:
   def __init__(self):
     self.goal = None
+    self.system = None
     
   def setParentGoal(self, goal):
+    assert isinstance(goal, Goal)
     self.goal = goal
     
   def getParentGoal(self):
     return self.goal
+  
+  def setSystem(self, system):
+    assert isinstance(system, System)
+    self.system = system
   
 class Goal:
   def __init__(self, name="", requirements=[], actions=[], results=[]):
@@ -132,6 +160,11 @@ class Goal:
     self.variables = dict()
     self.turtletoaction = dict()
     self.isResolving = True
+    self.system = None
+    
+    for pair in [(self.results, Result), (self.actions, Action), (self.requirements, Requirement)]:
+      for instance in pair[0]:
+        assert isinstance(instance, pair[1])
     
   def __str__(self):
     return self.name
@@ -149,6 +182,8 @@ class Goal:
     return key in self.variables
     
   def __deepcopy__(self, memo):
+    assert self.system is not None
+    
     name = copy.deepcopy(self.name, memo)
     requirements = copy.deepcopy(self.requirements, memo)
     actions = copy.deepcopy(self.actions, memo)
@@ -158,9 +193,15 @@ class Goal:
     for array in [requirements, actions, results]:
       for obj in array:
         obj.setParentGoal(newGoal)
+        obj.setSystem(self.system)
     
     return newGoal
   
+  def setSystem(self, system):
+    assert isinstance(system, System)
+    
+    self.system = system
+    
   def getPrereqs(self):
     return self.requirements
   
@@ -193,9 +234,13 @@ class Goal:
     return self.goals
   
   def addChildGoal(self, goal):
+    assert isinstance(goal, Goal)
+
     self.goals.append(goal)
     
   def getResponse(self, turtle):
+    assert isinstance(turtle, Turtle)
+    
     for req in self.requirements:
       if not req.isClaimed():
         print(str(req) + " is not claimed, can't generate response")
@@ -254,16 +299,16 @@ class VariableRequirement(Requirement):
     self.value = value
     
   def canClaim(self):
-    if variables.has_key(self.variable):
-      var = variables[self.variable]
+    if self.system.variables.has_key(self.variable):
+      var = self.system.variables[self.variable]
 
       return var.doComparison(self.comparison, self.value)
     else:
       return False
     
   def claim(self):
-    if self.variable in variables:
-      var = variables[self.variable]
+    if self.variable in self.systen.variables:
+      var = self.system.variables[self.variable]
       var.set(var.get() - self.value.get())
       self.claimed = True
       return True
@@ -478,11 +523,11 @@ gatherDirt = BasicGoal("gather dirt", [needsMiner, needsMine], [], [getsDirt])
 deconHouse = BasicGoal("decon house", [needsMiner, needsHouse], [], [gets5Dirt, losesHouse])
 buildHouse = BasicGoal("build house", [needsBuilder, needsHouseResources], [], [getsHouse])
 
-variables["turtles.miner.free"] = TurtlesMinersFreeVariable(sys)
-variables["turtles.builder.free"] = TurtlesMinersVariable(sys)
-variables["buildings.house"] = NumericVariable("",0)
-variables["resources.dirt"] = NumericVariable("",0)
-variables["plots.16.16"] = NumericVariable("",1)
+sys.variables["turtles.miner.free"] = TurtlesMinersFreeVariable(sys)
+sys.variables["turtles.builder.free"] = TurtlesMinersVariable(sys)
+sys.variables["buildings.house"] = NumericVariable("",0)
+sys.variables["resources.dirt"] = NumericVariable("",0)
+sys.variables["plots.16.16"] = NumericVariable("",1)
 
 """
 Actions need to know certain things before running. Reqs and other actions should set variables in the goal
@@ -496,6 +541,7 @@ That said, for a requirement to find a storage containing X, you can then use th
 tl;dr, goals must be very specific and limited in what they do.
 """
 
+"""
 goals = [gatherDirt, buildHouse, deconHouse, buildMine]
 currentgoals = []
 
@@ -577,6 +623,8 @@ print(turtle.getResponse())
 
 print("At this point, this goal is all out of things to do")
 
+"""
+
 # Prototype for the resolver class
 class GoalResolver:
   def __init__(self):
@@ -596,26 +644,27 @@ class GoalResolver:
     self.resolveGoals()
   
   def addGoal(self, goal):
+    assert isinstance(goal, Goal)
     self.allGoals.append(goal)
   
   def __resolve(self, goal):
     all = True
     score = 0
     reqActions = dict()
-    print("Trying to " + str(g))
-    for req in g.getPrereqs():
+    print("Trying to " + str(goal))
+    for req in goal.getPrereqs():
       print("looking at requirement for " + req.name)
       if req.canClaim():
         print("  Can already claim it")
         reqActions[req] = None
       else:
         reqActions[req] = []
-        for goal2 in goals:
+        for goal2 in self.allGoals:
           for action in goal2.getPostreqs():
             s = action.getHelpfulness(req)
             if s > 0:
               print("  action " + action.name + " from " + goal2.name + " has a helpfulness of " + str(s))
-              if isCounterProductive(g.getPostreqs(), goal2.getPostreqs()):
+              if self.__isCounterProductive(goal.getPostreqs(), goal2.getPostreqs()):
                 print("    but action " + action.name + " is counter-productive!")
               else:
                 reqActions[req].append((s, action, goal2))
@@ -628,9 +677,9 @@ class GoalResolver:
         neededGoal = reqs[0]
         print("I need " + str(neededGoal[2]) + " to " + str(neededGoal[1]) + " (helpfulness " + str(neededGoal[0]) + ")")
         neededGoals.append(neededGoal[2])
-        goal = copy.deepcopy(neededGoal[2])
-        g.addChildGoal(goal)
-        resolveGoal(goal)
+        goalcopy = copy.deepcopy(neededGoal[2])
+        goal.addChildGoal(goalcopy)
+        self.__resolve(goalcopy)
     return neededGoals
   
   def resolveGoals(self):
