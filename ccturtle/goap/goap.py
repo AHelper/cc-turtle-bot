@@ -20,6 +20,12 @@
 import copy
 from ccturtle.turtle import Turtle, designationToStr
 
+from yaml import load, load_all, dump, dump_all
+try:
+  from yaml import CLoader as Loader, CDumper as Dumper
+except:
+  from yaml import Loader, Dumper
+  
 # Temporary helper method, move to something more elegant in the future
 rpc_call_id = 0
 def genRPCCall(action_name, parameters):
@@ -529,6 +535,55 @@ sys.variables["buildings.house"] = NumericVariable("",0)
 sys.variables["resources.dirt"] = NumericVariable("",0)
 sys.variables["plots.16.16"] = NumericVariable("",1)
 
+class GoalLoader:
+  COMPARISONS = ["==","!=","<",">",">=","<="]
+  
+  def __init__(self, resolver):
+    assert isinstance(resolver, GoalResolver)
+    
+    self.resolver = resolver
+    
+  def __parsepart(self, string):
+    if string in self.resolver.system.variables:
+      return self.resolver.system.variables[string]
+    else:
+      return string
+  
+  def __loadrequirement(self, req):
+    assert "name" in req, "requirement needs 'name'"
+    assert "needs" in req, "requirement needs 'needs'"
+    assert isinstance(req["name"], str), "name must be string"
+    assert isinstance(req["needs"], str) or isinstance(req["needs"], list), "needs must be string or list of strings"
+    
+    # FIXME: Splitting like this is bad, depends on single spaces
+    if isinstance(req["needs"], str):
+      needs = [req["needs"]]
+    else:
+      needs = req["needs"]
+      
+    for need in needs:
+      assert isinstance(need, str), "needs must be string or list of strings"
+      
+      parts = [self.__parsepart(x) for x in need.split(" ")]
+      
+      if len(parts) == 3:
+        # Assume variable comparison
+        if parts[1] in self.COMPARISONS and (isinstance(parts[0], Variable) or isinstance(parts[2], Variable)):
+          print("Variable comparison")
+        else:
+          print(parts[1] in self.COMPARISONS)
+          print("Unk1")
+      else:
+        print("Unk2")
+    
+    
+  def load(self, filename):
+    with open(filename, 'r') as f:
+      objs = load_all(f, Loader=Loader)
+      for obj in objs:
+        print(obj)
+        if "requirement" in obj:
+          self.__loadrequirement(obj["requirement"])
 """
 Actions need to know certain things before running. Reqs and other actions should set variables in the goal
 that all other actions can use.
@@ -630,7 +685,7 @@ class GoalResolver:
   def __init__(self):
     self.currentGoals = []
     self.allGoals = []
-    
+    self.system = sys
 
   def __isCounterProductive(self, prereqs, postreqs):
     for req in prereqs:
