@@ -34,6 +34,45 @@ def genRPCCall(action_name, parameters):
   rpc_call_id += 1
   return {"action":action_name, "parameters":parameters, "id":rpc_call_id}
 
+class Variables:
+  def __init__(self, sys):
+    assert isinstance(sys, System)
+    self.items = {}
+    self.plotscache = {}
+    self.sys = sys
+    
+  def __iter__(self):
+    return self.items.__iter__()
+    
+  def __getitem__(self, key):
+    if not isinstance(key, str):
+      raise KeyError(key)
+    else:
+      try:
+        parts = key.split(".")
+        assert len(parts) > 0, "bad key"
+        
+        if key in self.items:
+          return self.items[key]
+        elif parts[0] == "plots":
+          wx = int(parts[1])
+          wz = int(parts[2])
+          i = (wx, wz)
+          v = PlotsVariable(self.sys, wx, wz)
+          self.items[v.name] = v
+          return v
+        else:
+          raise KeyError()
+      except:
+        raise KeyError(key)
+    
+  def __setitem__(self, key, value):
+    self.items[key] = value
+    
+  def __delitem__(self, key):
+    del self.items[key]
+        
+
 class System:
   MAX_PLOT_DIM = 4
   
@@ -42,7 +81,7 @@ class System:
     self.turtles[0].setDesignation(Turtle.MINER)
     self.turtles[1].setDesignation(Turtle.CRAFTER)
     self.claims = dict()
-    self.variables = dict()
+    self.variables = Variables(self)
     self.plots = {}
     self.sizedplotcache = {}
     
@@ -184,6 +223,21 @@ class TurtlesVariable(NumericVariable):
       if turtle.getDesignation() & self.type:
         count += 1
     return count
+  
+class PlotsVariable(NumericVariable):
+  def __init__(self, sys, wx, wz):
+    assert isinstance(wx, int)
+    assert isinstance(wz, int)
+    assert isinstance(sys, System)
+    NumericVariable.__init__(self, "plots.{}.{}".format(wx, wz))
+    self.size = (wx, wz)
+    self.sys = sys
+    
+  def get(self):
+    if self.size in self.sys.getSizedPlots():
+      return len(self.sys.getSizedPlots()[self.size])
+    else:
+      return 0
 
 class GoalComponent:
   def __init__(self):
@@ -580,10 +634,11 @@ for b in [True, False]:
     sys.addVariable(TurtlesVariable(sys, d, b))
 sys.variables["buildings.house"] = NumericVariable("",0)
 sys.variables["resources.dirt"] = NumericVariable("",0)
-sys.variables["plots.16.16"] = NumericVariable("",1)
+#sys.variables["plots.16.16"] = NumericVariable("",1)
 
 class GoalLoader:
   COMPARISONS = ["==","!=","<",">",">=","<="]
+  ASSIGNMENTS = ["+=", "-="]
   
   def __init__(self, resolver):
     assert isinstance(resolver, GoalResolver)
@@ -594,7 +649,7 @@ class GoalLoader:
     if string in self.resolver.system.variables:
       return self.resolver.system.variables[string]
     else:
-      return string
+      return self.__loadvariable(string)
     
   def __loadvariable(self, varstr):
     assert isinstance(varstr, str)
@@ -611,12 +666,17 @@ class GoalLoader:
       return BooleanVariable("",True)
     elif re.match("false|0|no|off", varstr, re.IGNORECASE):
       return BooleanVariable("",False)
-    m = re.match("plot\(([0-9]+)\)", varstr, re.IGNORECASE)
+    m = re.match("plot\(([^\)]+)\)", varstr, re.IGNORECASE)
     if m:
-      return self.resolver.system.variables["plots.{0}.{0}.free".format(m.groups()[0])]
+      parts = m.groups()[0].split(",")
+      if len(parts) == 1:
+        parts.append(parts[0])
+      return self.resolver.system.variables["plots.{0}.{0}".format(parts[0], parts[1])]
     m = re.match("turtle\((miner}|builder|crafter|forrester|farmer)\)", varstr, re.IGNORECASE)
     if m:
       return self.resolver.system.variables["turtles.{}.free".format(m.groups()[0])]
+    # Whelp
+    return varstr
   
   def __loadrequirement(self, req):
     assert "name" in req, "requirement needs 'name'"
@@ -637,24 +697,110 @@ class GoalLoader:
       
       if len(parts) == 3:
         # Assume variable comparison
-        if parts[1] in self.COMPARISONS and (isinstance(parts[0], Variable) or isinstance(parts[2], Variable)):
+        if parts[1] in self.COMPARISONS and (isinstance(parts[0], Variable) and isinstance(parts[2], Variable)):
           print("Variable comparison")
-          return VariableRequirement(req["name"], parts[0] if isinstance(parts[0], Variable) else parts[2], parts[1], self.__loadvariable(parts[2] if isinstance(parts[0], Variable) else parts[0]))
+          #return VariableRequirement(req["name"], parts[0] if isinstance(parts[0], Variable) else parts[2], parts[1], self.__loadvariable(parts[2] if isinstance(parts[0], Variable) else parts[0]))
+          return VariableRequirement(req["name"], parts[0], parts[1], parts[2])
         else:
           print(parts[1] in self.COMPARISONS)
           print("Unk1")
       elif len(parts) == 1:
-        v = self.__loadvariable(parts[0])
-        if v:
-          return VariableRequirement(req["name"], v, "!=", NumericVariable("Z",0))
-        else:
-          print("Unk3")
+        #v = self.__loadvariable(parts[0])
+        #if v:
+        return VariableRequirement(req["name"], parts[0], "!=", NumericVariable("Z",0))
+        #else:
+          #print("Unk3")
       else:
         print("Unk2")
     
+  def __loadresult(self, result):
+    assert "name" in result, "result needs 'name'"
+    assert "gets" in result, "result needs 'gets'"
+    assert isinstance(result["name"], str), "name must be string"
+    assert isinstance(result["gets"], str) or isinstance(result["gets"], list), "gets must be string or list of strings"
+    
+    if isinstance(result["gets"], str):
+      gets = [result["gets"]]
+    else:
+      gets = result["gets"]
+      
+    for get in gets:
+      assert isinstance(get, str), "gets must be string or list of strings"
+      
+      parts = [self.__parsepart(x) for x in get.split(" ")]
+      
+      if len(parts) == 3:
+        if parts[1] in self.ASSIGNMENTS and (isinstance(parts[0], Variable) and isinstance(parts[2], Variable)):
+          print("Variable modification")
+          if parts[1] == "+=":
+            return VariableIncreaseAction(result["name"], parts[0], parts[2])
+          elif parts[1] == "-=":
+            return VariableDecreaseAction(result["name"], parts[0], parts[2])
+        else:
+          print("Unk")
+      elif len(parts) == 1:
+        return VariableIncreaseAction(result["name"], parts[0], NumericVariable("",1))
+      else:
+        print("Unk")
+        
+  def __loadaction(self, action):
+    assert "name" in action, "action needs 'name'"
+    assert "does" in action, "action needs 'does'"
+    assert isinstance(action["name"], str), "name must be string"
+    assert isinstance(action["does"], str), "does must be string"
+    
+    does = action["does"]
+    name = action["name"]
+    
+    if re.match("move", does, re.IGNORECASE):
+      return MoveAction(name)
+    elif re.match("flatten", does, re.IGNORECASE):
+      return FlattenAction(name, 1)
+    else:
+      print("Unk")
+      
+  def __loadgoal(self, goal, l_reqs, l_actions, l_results):
+    assert "name" in goal, "goal needs 'name'"
+    assert isinstance(goal["name"], str), "name must be string"
+    
+    reqs = goal["needs"] if "needs" in goal else []
+    actions = goal["does"] if "does" in goal else []
+    results = goal["gets"] if "gets" in goal else []
+    
+    if isinstance(reqs, str):
+      reqs = [reqs]
+    if isinstance(actions, str):
+      actions = [actions]
+    if isinstance(results, str):
+      results = [results]
+    
+    i_reqs = []
+    i_actions = []
+    i_results = []
+    
+    for req in reqs:
+      if req not in l_reqs:
+        raise KeyError("requirement '{}' does not exist".format(req))
+      else:
+        i_reqs = l_reqs[req]
+    for action in actions:
+      if action not in l_actions:
+        raise KeyError("requirement '{}' does not exist".format(action))
+      else:
+        i_actions = l_actions[action]
+    for result in results:
+      if result not in l_results:
+        raise KeyError("result '{}' does not exist".format(result))
+      else:
+        i_results = l_results[result]
+        
+    return BasicGoal(goal["name"], i_reqs, i_actions, i_results)
     
   def load(self, filename):
     reqs = {}
+    results = {}
+    actions = {}
+    goals = {}
     with open(filename, 'r') as f:
       objs = load_all(f, Loader=Loader)
       for obj in objs:
@@ -668,17 +814,17 @@ class GoalLoader:
         elif "result" in obj:
           r=self.__loadresult(obj["result"])
           if r:
-            res[r.name] = r
+            results[r.name] = r
           else:
              print("Invalid result")
         elif "action" in obj:
           a=self.__loadaction(obj["action"])
           if a:
-            acts[a.name] = a
+            actions[a.name] = a
           else:
             print("Invalid action")
         elif "goal" in obj:
-          g=self.__loadgoal(obj["goal"])
+          g=self.__loadgoal(obj["goal"], reqs, actions, results)
           if g:
             goals[g.name] = g
           else:

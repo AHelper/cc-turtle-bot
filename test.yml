@@ -90,7 +90,7 @@ goal:
   name: build mine
   needs:
     - need builder
-    - need 16 plot
+    - need 16x16 plot
   gets:
     - get mine
   does:
