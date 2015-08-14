@@ -18,6 +18,7 @@
 #!/usr/bin/env python
 
 import copy
+import re
 from ccturtle.turtle import Turtle, designationToStr
 
 from yaml import load, load_all, dump, dump_all
@@ -548,6 +549,28 @@ class GoalLoader:
       return self.resolver.system.variables[string]
     else:
       return string
+    
+  def __loadvariable(self, varstr):
+    assert isinstance(varstr, str)
+    
+    try:
+      return NumericVariable("", int(varstr))
+    except ValueError:
+      pass
+    try:
+      return NumericVariable("", float(varstr))
+    except ValueError:
+      pass
+    if re.match("true|1|yes|on", varstr, re.IGNORECASE):
+      return BooleanVariable("",True)
+    elif re.match("false|0|no|off", varstr, re.IGNORECASE):
+      return BooleanVariable("",False)
+    m = re.match("plot\(([0-9]+)\)", varstr, re.IGNORECASE)
+    if m:
+      return self.resolver.system.variables["plots.{0}.{0}.free".format(m.groups()[0])]
+    m = re.match("turtle\((miner}|builder|crafter|forrester|farmer)\)", varstr, re.IGNORECASE)
+    if m:
+      return self.resolver.system.variables["turtles.{}.free".format(m.groups()[0])]
   
   def __loadrequirement(self, req):
     assert "name" in req, "requirement needs 'name'"
@@ -570,20 +593,50 @@ class GoalLoader:
         # Assume variable comparison
         if parts[1] in self.COMPARISONS and (isinstance(parts[0], Variable) or isinstance(parts[2], Variable)):
           print("Variable comparison")
+          return VariableRequirement(req["name"], parts[0] if isinstance(parts[0], Variable) else parts[2], parts[1], self.__loadvariable(parts[2] if isinstance(parts[0], Variable) else parts[0]))
         else:
           print(parts[1] in self.COMPARISONS)
           print("Unk1")
+      elif len(parts) == 1:
+        v = self.__loadvariable(parts[0])
+        if v:
+          return VariableRequirement(req["name"], v, "!=", NumericVariable("Z",0))
+        else:
+          print("Unk3")
       else:
         print("Unk2")
     
     
   def load(self, filename):
+    reqs = {}
     with open(filename, 'r') as f:
       objs = load_all(f, Loader=Loader)
       for obj in objs:
         print(obj)
         if "requirement" in obj:
-          self.__loadrequirement(obj["requirement"])
+          r=self.__loadrequirement(obj["requirement"])
+          if r:
+            reqs[r.name] = r
+          else:
+            print("Invalid requirement")
+        elif "result" in obj:
+          r=self.__loadresult(obj["result"])
+          if r:
+            res[r.name] = r
+          else:
+             print("Invalid result")
+        elif "action" in obj:
+          a=self.__loadaction(obj["action"])
+          if a:
+            acts[a.name] = a
+          else:
+            print("Invalid action")
+        elif "goal" in obj:
+          g=self.__loadgoal(obj["goal"])
+          if g:
+            goals[g.name] = g
+          else:
+            print("Invalid goal")
 """
 Actions need to know certain things before running. Reqs and other actions should set variables in the goal
 that all other actions can use.
