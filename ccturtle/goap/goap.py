@@ -35,13 +35,57 @@ def genRPCCall(action_name, parameters):
   return {"action":action_name, "parameters":parameters, "id":rpc_call_id}
 
 class System:
+  MAX_PLOT_DIM = 4
+  
   def __init__(self):
     self.turtles = [Turtle("1", 0, 0, 0, 0), Turtle("2", 0, 0, 0, 0)]
     self.turtles[0].setDesignation(Turtle.MINER)
     self.turtles[1].setDesignation(Turtle.CRAFTER)
     self.claims = dict()
     self.variables = dict()
+    self.plots = {}
+    self.sizedplotcache = {}
+    
+  def __updateplotcache(self):
+    # This is going to be bad for performance...
+    self.sizedplotcache = {}
+    for pos in self.plots.iterkeys():
+      for oz in range(0,self.MAX_PLOT_DIM):
+        for ox in range(0, self.MAX_PLOT_DIM):
+          o = (pos[0]+ox, pos[1]+oz)
+          if o in self.plots:
+            i = (ox+1,oz+1)
+            if i not in self.sizedplotcache:
+              self.sizedplotcache[i] = []
+            self.sizedplotcache[i].append(o)
+      #ox = 1
+      #oz = 0
+      #while True:
+        #if o not in self.plots:
+          #break
+        #self.sizedplotcache[
+        
+  def addVariable(self, variable):
+    assert isinstance(variable, Variable)
+    
+    self.variables[variable.name] = variable
   
+  def addPlot(self, x, y):
+    self.plots[(x,y)] = {"x":x,"y":y,"z":z}
+    self.__updateplotcache()
+    
+  def delPlot(self, x, z, wx=1, wz=1):
+    for ox in range(0,wx):
+      for oz in range(0,wz):
+        del self.plots[(x+ox,z+oz)]
+    self.__updateplotcache()
+    
+  def getPlots(self):
+    return self.plots
+  
+  def getSizedPlots(self):
+    return self.sizedplotcache
+    
   def addTurtle(self, turtle):
     self.turtles.append(turtle)
     
@@ -107,37 +151,38 @@ class Variable:
 class NumericVariable(Variable):
   def __init__(self, name, value=None):
     Variable.__init__(self, name, int)
-#    super(Variable, self).__init__(name, int)
     self.value = value
   
   def canCompareTo(self, other):
     return other.datatype in [int, float]
   
-class TurtlesMinersVariable(NumericVariable):
-  def __init__(self, sys):
-    NumericVariable.__init__(self, "turtles.miners")
+class BooleanVariable(Variable):
+  def __init__(self, name, value=None):
+    Variable.__init__(self, name, bool)
+    self.value = value
+  
+  def canCompareTo(self, other):
+    return other.datatype in [int, bool]
+  
+  def doComparison(self, comp, other):
+    if other.datatype == int:
+      return other.value != 0 if self.value else other.value == 0
+    else:
+      return Variable.doComparison(comp, other)
+        
+  
+class TurtlesVariable(NumericVariable):
+  def __init__(self, sys, type, is_free):
+    NumericVariable.__init__(self, "turtles.{}{}".format(designationToStr(type), ".free" if is_free else ""))
     self.sys = sys
+    self.type = type
   
   def get(self):
     turtles = self.sys.getTurtles()
     count = 0
     for turtle in turtles:
-      if turtle.getDesignation() & Turtle.MINER:
+      if turtle.getDesignation() & self.type:
         count += 1
-    return count
-  
-class TurtlesMinersFreeVariable(NumericVariable):
-  def __init__(self, sys):
-    NumericVariable.__init__(self, "turtles.miners.free")
-    self.sys = sys
-    
-  def get(self):
-    turtles = self.sys.getTurtles()
-    count = 0
-    for turtle in turtles:
-      if turtle.getDesignation() & Turtle.MINER:
-        if not self.sys.isClaimed(turtle):
-          count += 1
     return count
 
 class GoalComponent:
@@ -530,8 +575,9 @@ gatherDirt = BasicGoal("gather dirt", [needsMiner, needsMine], [], [getsDirt])
 deconHouse = BasicGoal("decon house", [needsMiner, needsHouse], [], [gets5Dirt, losesHouse])
 buildHouse = BasicGoal("build house", [needsBuilder, needsHouseResources], [], [getsHouse])
 
-sys.variables["turtles.miner.free"] = TurtlesMinersFreeVariable(sys)
-sys.variables["turtles.builder.free"] = TurtlesMinersVariable(sys)
+for b in [True, False]:
+  for d in [Turtle.BUILDER, Turtle.CRAFTER, Turtle.FARMER, Turtle.FORRESTER, Turtle.MINER]:
+    sys.addVariable(TurtlesVariable(sys, d, b))
 sys.variables["buildings.house"] = NumericVariable("",0)
 sys.variables["resources.dirt"] = NumericVariable("",0)
 sys.variables["plots.16.16"] = NumericVariable("",1)
