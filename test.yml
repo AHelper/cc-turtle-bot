@@ -1,0 +1,134 @@
+requirement:
+  name: need miner
+  needs: miner
+
+---
+
+requirement:
+  name: need builder
+  needs: turtle(builder)
+
+---
+
+requirement:
+  name: need house resources
+  needs:
+    - resources.dirt >= 5
+
+---
+
+requirement:
+  name: need mine
+  needs: buildings.mine >= 1
+
+---
+
+requirement:
+  name: need 16x16 plot
+  needs: plot(16)
+
+---
+
+result:
+  name: get dirt
+  gets: resources.dirt += 1
+
+---
+
+result:
+  name: get 5 dirt
+  gets: resources.dirt += 5
+
+--- 
+
+result:
+  name: get house
+  gets: buildings.house += 1
+
+---
+
+result:
+  name: get mine
+  gets: buildings.mine += 1
+
+---
+
+result:
+  name: lose house
+  gets: buildings.house -= 1
+
+---
+
+requirement:
+  name: need house
+  needs: buildings.house >= 1
+
+---
+
+action:
+  name: move
+  does: move
+
+---
+
+action:
+  name: flatten
+  does: flatten
+
+---
+
+action:
+  name: mine dirt
+  does: mine
+  vars:
+    block: dirt
+    count: 1
+
+---
+
+goal:
+  name: build mine
+  needs:
+    - need builder
+    - need 16 plot
+  gets:
+    - get mine
+  does:
+    - move
+    - flatten
+
+---
+
+goal:
+  name: gather dirt
+  needs:
+    - need miner
+    - need mine
+  gets:
+   - get dirt
+  does:
+   - move
+   - mine dirt
+
+---
+
+goal:
+  name: decon house
+  needs:
+   - need miner
+   - need house
+  gets:
+   - gets 5 dirt
+   - lose house
+
+---
+
+goal:
+  name: build house
+  needs:
+   - need builder
+   - need house resources
+  gets:
+   - get house
+
+
