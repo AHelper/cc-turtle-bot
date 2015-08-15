@@ -43,6 +43,15 @@ class SQLiteStorage:
     cur.execute("CREATE TABLE IF NOT EXISTS civs (id integer, name text)")
     self.conn.commit()
     
+  def getCursor(self):
+    return self.conn.cursor()
+  
+  def commit(self):
+    self.conn.commit()
+    
+  def rollback(self):
+    self.conn.rollback()
+    
   def loadTurtle(self, id):
     cur = self.conn.cursor()
     

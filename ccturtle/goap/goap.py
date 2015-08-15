@@ -61,6 +61,23 @@ class Variables:
           v = PlotsVariable(self.sys, wx, wz)
           self.items[v.name] = v
           return v
+        elif parts[0] == "buildings":
+          for b in self.sys.BUILDING_TYPES:
+            if b[0] == parts[1]:
+              mk = None
+              free = False
+              if len(parts) > 2:
+                try:
+                  mk = int(parts[2])
+                  if mk > b[1]:
+                    raise KeyError("Mk {} is too high for {} ({} max)".format(mk, b[0], b[1]))
+                  del parts[2]
+                except ValueError:
+                  pass
+              if len(parts) > 2:
+                if parts[2] == "free":
+                  free = True
+              return BuildingVariable(b[0], mk, free)
         else:
           raise KeyError()
       except:
@@ -75,6 +92,10 @@ class Variables:
 
 class System:
   MAX_PLOT_DIM = 4
+  BUILDING_TYPES = [
+    ("mine",1),
+    ("house",1)
+  ]
   
   def __init__(self):
     self.turtles = [Turtle("1", 0, 0, 0, 0), Turtle("2", 0, 0, 0, 0)]
@@ -84,6 +105,7 @@ class System:
     self.variables = Variables(self)
     self.plots = {}
     self.sizedplotcache = {}
+    self.buildings = {} # key -> (building name, mk)
     
   def __updateplotcache(self):
     # This is going to be bad for performance...
@@ -103,6 +125,11 @@ class System:
         #if o not in self.plots:
           #break
         #self.sizedplotcache[
+        
+  def addBuilding(self, x, y, z, building_name, mk=1):
+    self.buildings[(building_name,mk)] = {"type":building_name,"mk":mk,"x":x,"y":y,"z":z}
+    
+  #def delBuilding(self, 
         
   def addVariable(self, variable):
     assert isinstance(variable, Variable)
@@ -633,6 +660,7 @@ for b in [True, False]:
   for d in [Turtle.BUILDER, Turtle.CRAFTER, Turtle.FARMER, Turtle.FORRESTER, Turtle.MINER]:
     sys.addVariable(TurtlesVariable(sys, d, b))
 sys.variables["buildings.house"] = NumericVariable("",0)
+sys.variables["buildings.mine"] = NumericVariable("",0)
 sys.variables["resources.dirt"] = NumericVariable("",0)
 #sys.variables["plots.16.16"] = NumericVariable("",1)
 
@@ -782,17 +810,17 @@ class GoalLoader:
       if req not in l_reqs:
         raise KeyError("requirement '{}' does not exist".format(req))
       else:
-        i_reqs = l_reqs[req]
+        i_reqs.append(l_reqs[req])
     for action in actions:
       if action not in l_actions:
-        raise KeyError("requirement '{}' does not exist".format(action))
+        raise KeyError("action '{}' does not exist".format(action))
       else:
-        i_actions = l_actions[action]
+        i_actions.append(l_actions[action])
     for result in results:
       if result not in l_results:
         raise KeyError("result '{}' does not exist".format(result))
       else:
-        i_results = l_results[result]
+        i_results.append(l_results[result])
         
     return BasicGoal(goal["name"], i_reqs, i_actions, i_results)
     
