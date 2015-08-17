@@ -15,13 +15,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-# TODO: ORM it!
-class Building:
-  def __init__(self, x, y, z, building_type, mk=1):
+from ccturtle.system import SQLiteStorageItem
+
+class Building(SQLiteStorageItem):
+  def __init__(self, x, y, z, building_type, mk=1, id=None):
     self.x = x
     self.y = y
     self.z = z
     self.building_type = building_type
     self.mk = mk
+    self.id = id
     
+  def sql(self):
+    return (self.id, self.x, self.y, self.z, self.building_type, self.mk)
   
+  @staticmethod
+  def args(self):
+    return "id x y z building_type mk".split(" ")

@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from ccturtle.system import SQLiteStorageItem
+
 def designationToStr(designation):
   if designation == Turtle.MINER:
     return "miner"
@@ -29,7 +31,7 @@ def designationToStr(designation):
 """
 Control entrypoint for a single turtle.
 """
-class Turtle:
+class Turtle(SQLiteStorageItem):
   MINER =     0x01
   CRAFTER =   0x02
   FORRESTER = 0x04
@@ -37,14 +39,22 @@ class Turtle:
   BUILDER =   MINER | FORRESTER | FARMER
   
   
-  def __init__(self, unique_name, x, y, z, facing):
+  def __init__(self, unique_name, x, y, z, facing, id=None, civ=None, designation=None):
     self.x = x
     self.y = y
     self.z = z
     self.facing = facing
     self.name = unique_name
+    self.civ = civ
+    self.designation = designation
+    self.id = id
     
-    self.designation = None
+  def sql(self):
+    return (self.id, self.x, self.y, self.z, self.facing, self.name, self.designation, self.civ)
+  
+  @staticmethod
+  def args(self):
+    return "id x y z facing unique_name designation civ".split(" ")
   
   def getName(self):
     return self.name

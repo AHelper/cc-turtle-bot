@@ -97,7 +97,7 @@ class System:
     ("house",1)
   ]
   
-  def __init__(self):
+  def __init__(self, path):
     self.turtles = [Turtle("1", 0, 0, 0, 0), Turtle("2", 0, 0, 0, 0)]
     self.turtles[0].setDesignation(Turtle.MINER)
     self.turtles[1].setDesignation(Turtle.CRAFTER)
@@ -106,6 +106,7 @@ class System:
     self.plots = {}
     self.sizedplotcache = {}
     self.buildings = {} # key -> (building name, mk)
+    # TODO, integrate SQL Storage
     
   def __updateplotcache(self):
     # This is going to be bad for performance...
@@ -136,7 +137,7 @@ class System:
     
     self.variables[variable.name] = variable
   
-  def addPlot(self, x, y):
+  def addPlot(self, plot):
     self.plots[(x,y)] = {"x":x,"y":y,"z":z}
     self.__updateplotcache()
     

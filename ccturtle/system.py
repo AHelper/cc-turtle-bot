@@ -20,7 +20,17 @@ import tornado.log
 from ccturtle.pathing import Pathing
 from ccturtle.requestparser import RequestValidator
 from ccturtle.turtle import Turtle
+from ccturtle.plot import Plot
+from ccturtle.building import Building
 
+class SQLiteStorageItem:
+  def sql(self):
+    raise NotImplementedError()
+  
+  @staticmethod
+  def args(self):
+    raise NotImplementedError()
+  
 class SQLiteStorage:
   def __init__(self, path):
     self.path = path
@@ -39,8 +49,11 @@ class SQLiteStorage:
   def __createTables(self):
     cur = self.conn.cursor()
     
-    cur.execute("CREATE TABLE IF NOT EXISTS turtles (civ integer, name text PRIMARY KEY, x integer, y integer, z integer, facing integer)")
-    cur.execute("CREATE TABLE IF NOT EXISTS civs (id integer, name text)")
+    cur.execute("CREATE TABLE IF NOT EXISTS turtles (civ integer, name text, id integer PRIMARY KEY, x integer, y integer, z integer, facing integer)")
+    cur.execute("CREATE TABLE IF NOT EXISTS civs (id integer primary key, name text)")
+    cur.execute("CREATE TABLE IF NOT EXISTS buildings (id integer PRIMARY KEY, x integer, y integer, z integer, mk integer, building_type text)")
+    cur.execute("CREATE TABLE IF NOT EXISTS plots (id integer PRIMARY KEY, x integer, y integer, z integer)")
+    cur.execute("CREATE TABLE IF NOT EXISTS building_plots (bid integer, pid integer)")
     self.conn.commit()
     
   def getCursor(self):
@@ -51,45 +64,79 @@ class SQLiteStorage:
     
   def rollback(self):
     self.conn.rollback()
-    
-  def loadTurtle(self, id):
+  
+  def __getAllIds(self, table):
     cur = self.conn.cursor()
     
-    cur.execute("SELECT name, x, y, z, facing FROM turtles WHERE name=?", (id,))
+    ids = []
+    for row in cur.execute("SELECT id FROM {}".format(table)):
+      ids.append(row[0])
+    return ids
+  
+  def __load(self, varstr, table, id, type):
+    cur = self.conn.cursor()
+    
+    cur.execute("SELECT {} FROM {} WHERE id = ?".format(varstr, table), id)
     
     row = cur.fetchone()
     
     if row != None:
-      return Turtle(row[0], int(row[1]), int(row[2]), int(row[3]), int(row[4]))
+      d = {}
+      for i, key in enumerate(type.args()):
+        d[key] = row[i]
+      return type(**d)
     else:
       return None
     
-  def delTurtle(self, id):
+  def __save(self, table, varstr, storage_item):
     cur = self.conn.cursor()
     
-    cur.execute("DELETE FROM turtles WHERE name=?", id)
+    cur.execute("INSERT OR REPLACE INTO {} ({}) VALUES ({})".format(table, varstr, ((varstr.count(",")+1)*"?,")[:-1]), storage_item.sql())
     
     self.conn.commit()
+    
+  def __del(self, table, storage_item):
+    cur = self.conn.cursor()
+    
+    cur.execute("DELETE FROM {} WHERE id = ?".format(table), storage_item.sql()[0])
+    
+    self.conn.commit()
+    
+  def getAllTurtleNames(self):
+    return self.__getAllIds("turtle")
+  
+  def loadTurtle(self, id):
+    return self.__load("id, x, y, z, facing, name, designation, civ", "turtles", id, Turtle)
   
   def saveTurtle(self, turtle):
-    cur = self.conn.cursor()
+    self.__save("turtles", "id, x, y, z, facing, name, designation, civ", turtle)
     
-    cur.execute("INSERT OR REPLACE INTO turtles (civ, name, x, y, z, facing) VALUES (?,?,?,?,?,?)",(
-                0,
-                turtle.name,
-                turtle.x,
-                turtle.y,
-                turtle.z,
-                turtle.facing))
-    self.conn.commit()
+  def delTurtle(self, id):
+    self.__del("turtles", id)
   
-  def getAllTurtleNames(self):
-    cur = self.conn.cursor()
+  def getAllPlotIds(self):
+    return self.__getAllIds("plots")
+  
+  def loadPlot(self, id):
+    self.__load("id, x, y, z", "plots", id, Plot)
     
-    names = []
-    for row in cur.execute("SELECT name FROM turtles"):
-      names.append(row[0])
-    return names
+  def savePlot(self, plot):
+    self.__save("plots", "id, x, y, z", plot)
+    
+  def delPlot(self, plot):
+    self.__del("plots", plot)
+    
+  def getAllBuildingIds(self):
+    return self.__getAllIds("buildings")
+  
+  def loadBuilding(self, id):
+    return self.__load("id, x, y, z, building_type, mk", "buildings", id, Building)
+  
+  def saveBuilding(self, building):
+    self.__save("buildings", "id, x, y, z, building_type, mk", building)
+    
+  def delBuilding(self, building):
+    self.__del("building", building)
   
 class System:
   def __init__(self):
