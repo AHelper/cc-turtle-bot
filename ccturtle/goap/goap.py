@@ -20,6 +20,7 @@
 import copy
 import re
 from ccturtle.turtle import Turtle, designationToStr
+from ccturtle.system import SQLiteStorage
 
 from yaml import load, load_all, dump, dump_all
 try:
@@ -98,15 +99,29 @@ class System:
   ]
   
   def __init__(self, path):
-    self.turtles = [Turtle("1", 0, 0, 0, 0), Turtle("2", 0, 0, 0, 0)]
-    self.turtles[0].setDesignation(Turtle.MINER)
-    self.turtles[1].setDesignation(Turtle.CRAFTER)
+    self.turtles = {}
     self.claims = dict()
     self.variables = Variables(self)
     self.plots = {}
     self.sizedplotcache = {}
     self.buildings = {} # key -> (building name, mk)
     # TODO, integrate SQL Storage
+    self.sql = SQLiteStorage(path) 
+    
+    plotIds = self.sql.getAllPlotIds()
+    for plotId in plotIds:
+      plot = self.sql.loadPlot(plotId)
+      self.plots[plotId] = plot
+      
+    buildingIds = self.sql.getAllBuildingIds()
+    for buildingId in buildingIds:
+      building = self.sql.loadBuilding(buildingId)
+      self.buildings[buildingId] = building
+    
+    turtleIds = self.sql.getAllTurtleIds()
+    for turtleId in turtleIds:
+      turtle = self.sql.loadTurtle(turtleId)
+      self.turtles[turtleId] = turtle
     
   def __updateplotcache(self):
     # This is going to be bad for performance...
@@ -127,8 +142,17 @@ class System:
           #break
         #self.sizedplotcache[
         
-  def addBuilding(self, x, y, z, building_name, mk=1):
-    self.buildings[(building_name,mk)] = {"type":building_name,"mk":mk,"x":x,"y":y,"z":z}
+  def save(self):
+    for building in self.buildings.itervalues():
+      self.sql.saveBuilding(building)
+    for plot in self.plots.itervalues():
+      self.sql.savePlot(plot)
+    for turtle in self.turtles.itervalues():
+      self.sql.saveTurtle(turtle)
+        
+  def addBuilding(self, building): #x, y, z, building_name, mk=1):
+    self.sql.saveBuilding(building)
+    #self.buildings[(building_name,mk)] = {"type":building_name,"mk":mk,"x":x,"y":y,"z":z}
     
   #def delBuilding(self, 
         

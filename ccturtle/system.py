@@ -54,6 +54,8 @@ class SQLiteStorage:
     cur.execute("CREATE TABLE IF NOT EXISTS buildings (id integer PRIMARY KEY, x integer, y integer, z integer, mk integer, building_type text)")
     cur.execute("CREATE TABLE IF NOT EXISTS plots (id integer PRIMARY KEY, x integer, y integer, z integer)")
     cur.execute("CREATE TABLE IF NOT EXISTS building_plots (bid integer, pid integer)")
+    cur.execute("CREATE TABLE IF NOT EXISTS variables (key text primary key, type text, value blob)")
+    
     self.conn.commit()
     
   def getCursor(self):
@@ -92,6 +94,7 @@ class SQLiteStorage:
     cur = self.conn.cursor()
     
     cur.execute("INSERT OR REPLACE INTO {} ({}) VALUES ({})".format(table, varstr, ((varstr.count(",")+1)*"?,")[:-1]), storage_item.sql())
+    storage_item.id = cur.lastrowid
     
     self.conn.commit()
     
@@ -102,7 +105,7 @@ class SQLiteStorage:
     
     self.conn.commit()
     
-  def getAllTurtleNames(self):
+  def getAllTurtleIds(self):
     return self.__getAllIds("turtle")
   
   def loadTurtle(self, id):
@@ -137,6 +140,32 @@ class SQLiteStorage:
     
   def delBuilding(self, building):
     self.__del("building", building)
+    
+  def saveVariable(self, key, value, type):
+    cur = self.conn.cursor()
+    
+    cur.execute("INSERT OR UPDATE INTO variables (key, value, type) VALUES (?,?,?)", (key, value, type))
+    
+    self.conn.commit()
+  
+  def loadVariable(self, key):
+    cur = self.conn.cursor()
+    
+    cur.execute("SELECT value, type FROM variables WHERE key = ?", key)
+    
+    row = cur.fetchone()
+    
+    if row != None:
+      return (row[0], row[1])
+    else:
+      return None
+    
+  def delVariable(self, key):
+    cur = self.conn.cursor()
+    
+    cur.execute("DELETE FROM variables WHERE key = ?", (key,))
+    
+    self.conn.commit()
   
 class System:
   def __init__(self):
