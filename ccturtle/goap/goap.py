@@ -78,7 +78,7 @@ class Variables:
               if len(parts) > 2:
                 if parts[2] == "free":
                   free = True
-              return BuildingVariable(b[0], mk, free)
+              return BuildingsVariable(b[0], mk, free)
         else:
           raise KeyError()
       except:
@@ -152,17 +152,20 @@ class System:
         
   def addBuilding(self, building): #x, y, z, building_name, mk=1):
     self.sql.saveBuilding(building)
+    self.buildings[building.id] = building
     #self.buildings[(building_name,mk)] = {"type":building_name,"mk":mk,"x":x,"y":y,"z":z}
     
   #def delBuilding(self, 
         
-  def addVariable(self, variable):
+  def addVariable(self, variable, save=False):
     assert isinstance(variable, Variable)
     
     self.variables[variable.name] = variable
+    
   
   def addPlot(self, plot):
-    self.plots[(x,y)] = {"x":x,"y":y,"z":z}
+    self.sql.savePlot(plot)
+    self.plots[plot.id] = {"x":x,"y":y,"z":z}
     self.__updateplotcache()
     
   def delPlot(self, x, z, wx=1, wz=1):
@@ -278,6 +281,21 @@ class TurtlesVariable(NumericVariable):
   
 class PlotsVariable(NumericVariable):
   def __init__(self, sys, wx, wz):
+    assert isinstance(wx, int)
+    assert isinstance(wz, int)
+    assert isinstance(sys, System)
+    NumericVariable.__init__(self, "plots.{}.{}".format(wx, wz))
+    self.size = (wx, wz)
+    self.sys = sys
+    
+  def get(self):
+    if self.size in self.sys.getSizedPlots():
+      return len(self.sys.getSizedPlots()[self.size])
+    else:
+      return 0
+
+class BuildingsVariable(NumericVariable):
+  def __init__(self, sys, building_type, mk, is_free):
     assert isinstance(wx, int)
     assert isinstance(wz, int)
     assert isinstance(sys, System)
