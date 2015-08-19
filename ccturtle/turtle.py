@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from ccturtle.system import SQLiteStorageItem
+from ccturtle.sqlitestorage import SQLiteStorageItem
 
 def designationToStr(designation):
   if designation == Turtle.MINER:

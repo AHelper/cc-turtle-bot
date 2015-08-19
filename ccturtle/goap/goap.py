@@ -181,10 +181,12 @@ class System:
     return self.sizedplotcache
     
   def addTurtle(self, turtle):
-    self.turtles.append(turtle)
+    self.sql.saveTurtle(turtle)
+    self.turtles[turtle.id] = turtle
     
   def delTurtle(self, turtle):
-    self.turtles.remove(turtle)
+    del self.turtles[turtle.id]
+    self.sql.delTurtle(turtle.id)
     
   def claimTurtle(self, turtle):
     print("SYS: Claiming turtle")
@@ -682,7 +684,7 @@ class VariableDecreaseAction(Result):
         return -req.amount
     return 0
   
-sys = System()
+sys = System("goap.db")
 needsMiner = TurtleClaimRequirement("need miner", Turtle.MINER, sys)
 needsBuilder = TurtleClaimRequirement("need builder", Turtle.BUILDER, sys)
 needsHouseResources = VariableRequirement("need house resources", "resources.dirt", ">=", NumericVariable("",5))
@@ -874,20 +876,25 @@ class GoalLoader:
     goals = {}
     with open(filename, 'r') as f:
       objs = load_all(f, Loader=Loader)
+      f_reqs = []
+      f_results = []
+      f_actions = []
+      f_goals = []
       for obj in objs:
         print(obj)
         if "requirement" in obj:
-          r=self.__loadrequirement(obj["requirement"])
-          if r:
-            reqs[r.name] = r
-          else:
-            print("Invalid requirement")
+          f_reqs.append(obj)
+          #r=self.__loadrequirement(obj["requirement"])
+          #if r:
+            #reqs[r.name] = r
+          #else:
+            #print("Invalid requirement")
         elif "result" in obj:
-          r=self.__loadresult(obj["result"])
-          if r:
-            results[r.name] = r
-          else:
-             print("Invalid result")
+          #r=self.__loadresult(obj["result"])
+          #if r:
+            #results[r.name] = r
+          #else:
+             #print("Invalid result")
         elif "action" in obj:
           a=self.__loadaction(obj["action"])
           if a:
