@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from ccturtle.sqlitestorage import SQLiteStorageItem
+from ccturtle.sqlitestorageitem import SQLiteStorageItem
 
 class Building(SQLiteStorageItem):
   def __init__(self, x, y, z, building_type, mk=1, id=None):
@@ -30,5 +30,5 @@ class Building(SQLiteStorageItem):
     return (self.id, self.x, self.y, self.z, self.building_type, self.mk)
   
   @staticmethod
-  def args(self):
+  def args():
     return "id x y z building_type mk".split(" ")

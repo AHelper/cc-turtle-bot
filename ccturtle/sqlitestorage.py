@@ -16,14 +16,7 @@
 
 
 import sqlite3
-
-class SQLiteStorageItem:
-  def sql(self):
-    raise NotImplementedError()
-  
-  @staticmethod
-  def args(self):
-    raise NotImplementedError()
+from ccturtle.turtle import Turtle
   
 class SQLiteStorage:
   def __init__(self, path):
@@ -43,7 +36,7 @@ class SQLiteStorage:
   def __createTables(self):
     cur = self.conn.cursor()
     
-    cur.execute("CREATE TABLE IF NOT EXISTS turtles (civ integer, name text, id integer PRIMARY KEY, x integer, y integer, z integer, facing integer)")
+    cur.execute("CREATE TABLE IF NOT EXISTS turtles (civ integer, name text, id integer PRIMARY KEY, x integer, y integer, z integer, facing integer, designation integer)")
     cur.execute("CREATE TABLE IF NOT EXISTS civs (id integer primary key, name text)")
     cur.execute("CREATE TABLE IF NOT EXISTS buildings (id integer PRIMARY KEY, x integer, y integer, z integer, mk integer, building_type text)")
     cur.execute("CREATE TABLE IF NOT EXISTS plots (id integer PRIMARY KEY, x integer, y integer, z integer)")
@@ -72,7 +65,7 @@ class SQLiteStorage:
   def __load(self, varstr, table, id, type):
     cur = self.conn.cursor()
     
-    cur.execute("SELECT {} FROM {} WHERE id = ?".format(varstr, table), id)
+    cur.execute("SELECT {} FROM {} WHERE id = ?".format(varstr, table), (id,))
     
     row = cur.fetchone()
     

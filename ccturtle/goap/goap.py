@@ -44,6 +44,9 @@ class Variables:
     
   def __iter__(self):
     return self.items.__iter__()
+  
+  def __contains__(self, item):
+    return item in self.items
     
   def __getitem__(self, key):
     if not isinstance(key, str):
@@ -346,7 +349,7 @@ class Goal:
     self.goals = []
     self.variables = dict()
     self.turtletoaction = dict()
-    self.isResolving = True
+    self.resolving = False
     self.system = None
     
     for pair in [(self.results, Result), (self.actions, Action), (self.requirements, Requirement)]:
@@ -412,7 +415,7 @@ class Goal:
     return self.resolved
   
   def isResolving(self):
-    return self.isResolving
+    return self.resolving
   
   def getActions(self):
     return self.actions
@@ -460,6 +463,9 @@ class BasicGoal(Goal):
   def __init__(self, name, requirements, actions, results):
     Goal.__init__(self, name, requirements, actions, results)
     
+  def __str__(self):
+    return self.name
+    
 class Requirement(GoalComponent):
   def __init__(self, name=""):
     GoalComponent.__init__(self)
@@ -486,7 +492,7 @@ class VariableRequirement(Requirement):
     self.value = value
     
   def canClaim(self):
-    if self.system.variables.has_key(self.variable):
+    if self.variable in self.system.variables:
       var = self.system.variables[self.variable]
 
       return var.doComparison(self.comparison, self.value)
@@ -494,7 +500,7 @@ class VariableRequirement(Requirement):
       return False
     
   def claim(self):
-    if self.variable in self.systen.variables:
+    if self.variable in self.system.variables:
       var = self.system.variables[self.variable]
       var.set(var.get() - self.value.get())
       self.claimed = True
@@ -530,24 +536,33 @@ class TurtleClaimRequirement(VariableRequirement):
   def getTurtle(self):
     return self.turtle
   
+  def canClaim(self):
+    turtles = self.sys.getTurtles()
+    for turtle in turtles:
+      if not self.sys.isClaimed(turtle):
+        if turtle.getDesignation() & self.designation:
+          return True
+    return False
+    
   def claim(self):
     turtles = self.sys.getTurtles()
     for turtle in turtles:
       print(turtle.getDesignation())
       print(self.designation)
-      if turtle.getDesignation() & self.designation:
-        # Claim
-        self.sys.claimTurtle(turtle)
-        self.turtle = turtle
-        turtle.setGoal(self.goal)
-        self.claimed = True
-        
-        #key = ("turtle." + designationToStr(self.designation))
-        key = "turtle"
-        if key not in self.goal:
-          self.goal[key] = []
-        self.goal[key].append(turtle)
-        return True
+      if not self.sys.isClaimed(turtle):
+        if turtle.getDesignation() & self.designation:
+          # Claim
+          self.sys.claimTurtle(turtle)
+          self.turtle = turtle
+          turtle.setGoal(self.goal)
+          self.claimed = True
+          
+          #key = ("turtle." + designationToStr(self.designation))
+          key = "turtle"
+          if key not in self.goal:
+            self.goal[key] = []
+          self.goal[key].append(turtle)
+          return True
     return False
     
 class Action(GoalComponent):
@@ -958,6 +973,7 @@ class GoalLoader:
         g=self.__loadgoal(goal, reqs, actions, results)
         if g:
           goals[g.name] = g
+          self.resolver.addGoal(g)
         else:
           print("Invalid goal")
 """
@@ -1077,6 +1093,7 @@ class GoalResolver:
   def addGoal(self, goal):
     assert isinstance(goal, Goal)
     self.allGoals.append(goal)
+    goal.setSystem(self.system)
   
   def __resolve(self, goal):
     all = True
@@ -1092,6 +1109,7 @@ class GoalResolver:
         reqActions[req] = []
         for goal2 in self.allGoals:
           for action in goal2.getPostreqs():
+            print(action)
             s = action.getHelpfulness(req)
             if s > 0:
               print("  action " + action.name + " from " + goal2.name + " has a helpfulness of " + str(s))

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from ccturtle.sqlitestorage import SQLiteStorageItem
+from ccturtle.sqlitestorageitem import SQLiteStorageItem
 
 def designationToStr(designation):
   if designation == Turtle.MINER:
@@ -53,7 +53,7 @@ class Turtle(SQLiteStorageItem):
     return (self.id, self.x, self.y, self.z, self.facing, self.name, self.designation, self.civ)
   
   @staticmethod
-  def args(self):
+  def args():
     return "id x y z facing unique_name designation civ".split(" ")
   
   def getName(self):

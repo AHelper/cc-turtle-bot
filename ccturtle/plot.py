@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from ccturtle.sqlitestorage import SQLiteStorageItem
+from ccturtle.sqlitestorageitem import SQLiteStorageItem
 
 class Plot(SQLiteStorageItem):
   def __init__(self, x, y, z, id=None):
@@ -28,5 +28,5 @@ class Plot(SQLiteStorageItem):
     return (self.id, self.x, self.y, self.z)
   
   @staticmethod
-  def args(self):
+  def args():
     return "id x y z".split(" ")
