@@ -104,7 +104,7 @@ class System:
     self.variables = Variables(self)
     self.plots = {}
     self.sizedplotcache = {}
-    self.buildings = {} # key -> (building name, mk)
+    self.buildings = dict() # key -> (building name, mk)
     # TODO, integrate SQL Storage
     self.sql = SQLiteStorage(path) 
     
@@ -165,7 +165,7 @@ class System:
   
   def addPlot(self, plot):
     self.sql.savePlot(plot)
-    self.plots[plot.id] = {"x":x,"y":y,"z":z}
+    self.plots[plot.id] = plot
     self.__updateplotcache()
     
   def delPlot(self, x, z, wx=1, wz=1):
@@ -298,18 +298,27 @@ class PlotsVariable(NumericVariable):
 
 class BuildingsVariable(NumericVariable):
   def __init__(self, sys, building_type, mk, is_free):
-    assert isinstance(wx, int)
-    assert isinstance(wz, int)
+    #assert isinstance(wx, int)
+    #assert isinstance(wz, int)
     assert isinstance(sys, System)
-    NumericVariable.__init__(self, "plots.{}.{}".format(wx, wz))
-    self.size = (wx, wz)
+    #NumericVariable.__init__(self, "plots.{}.{}".format(wx, wz))
+    #self.size = (wx, wz)
+    self.building_type = building_type
+    self.mk = mk
     self.sys = sys
     
   def get(self):
-    if self.size in self.sys.getSizedPlots():
-      return len(self.sys.getSizedPlots()[self.size])
-    else:
+    #if self.size in self.sys.getSizedPlots():
+      #return len(self.sys.getSizedPlots()[self.size])
+    #else:
+    if self.is_free:
       return 0
+    else:
+      count = 0
+      for building in sys.buildings.itervalues():
+        if building.building_type == self.building_type and building.mk == self.mk:
+          count += 1
+      return count
 
 class GoalComponent:
   def __init__(self):
@@ -636,6 +645,35 @@ class FlattenAction(Action):
         self.invoked = False
         self.completed = False
         return {"retry":True}
+      
+class MineAction(Action):
+  def __init__(self, name, block_name, count):
+    Action.__init__(self, name)
+    self.block_name = block_name
+    self.count = count
+    self.params = {}
+    
+  def validate(self, turtle):
+    if "turtle" not in self.goal:
+      raise RuntimeError("No turtle found")
+    #elif "block" not in self.goal or "item" not in self.goal:
+      #raise RuntimeError("No block or item found")
+    elif turtle != self.goal["turtle"][0]:
+      return False
+    else:
+      #if "block" in self.goal:
+        #self.params["block"] = self.goal["block"]
+      #else:
+        #self.params["item"] = self.goal["item"]
+      self.params["block"] = self.block_name
+      self.params["count"] = self.count
+      return True
+    
+  def invoke(self, turtle):
+    if not self.validate(turtle):
+      return False
+    else:
+      return genRPCCall("mine", self.params)
 
 class Result(GoalComponent):
   def __init__(self, name=""):
@@ -829,6 +867,11 @@ class GoalLoader:
       return MoveAction(name)
     elif re.match("flatten", does, re.IGNORECASE):
       return FlattenAction(name, 1)
+    elif re.match("mine", does, re.IGNORECASE):
+      assert "vars" in action, "action needs vars"
+      assert "block" in action["vars"], "needs block name"
+      assert "count" in action["vars"], "needs block count"
+      return MineAction(name, block_name=action["vars"]["block"], count=int(action["vars"]["count"]))
     else:
       print("Unk")
       
@@ -880,33 +923,43 @@ class GoalLoader:
       f_results = []
       f_actions = []
       f_goals = []
+      
       for obj in objs:
         print(obj)
         if "requirement" in obj:
-          f_reqs.append(obj)
-          #r=self.__loadrequirement(obj["requirement"])
-          #if r:
-            #reqs[r.name] = r
-          #else:
-            #print("Invalid requirement")
+          f_reqs.append(obj["requirement"])
         elif "result" in obj:
-          #r=self.__loadresult(obj["result"])
-          #if r:
-            #results[r.name] = r
-          #else:
-             #print("Invalid result")
+          f_results.append(obj["result"])
         elif "action" in obj:
-          a=self.__loadaction(obj["action"])
-          if a:
-            actions[a.name] = a
-          else:
-            print("Invalid action")
+          f_actions.append(obj["action"])
         elif "goal" in obj:
-          g=self.__loadgoal(obj["goal"], reqs, actions, results)
-          if g:
-            goals[g.name] = g
-          else:
-            print("Invalid goal")
+          f_goals.append(obj["goal"])
+          
+      for result in f_results:
+        print(result)
+        r=self.__loadresult(result)
+        if r:
+          results[r.name] = r
+        else:
+          print("Invalid result")
+      for req in f_reqs:
+        r=self.__loadrequirement(req)
+        if r:
+          reqs[r.name] = r
+        else:
+          print("Invalid requirement")
+      for action in f_actions:
+        a=self.__loadaction(action)
+        if a:
+          actions[a.name] = a
+        else:
+          print("Invalid action")
+      for goal in f_goals:
+        g=self.__loadgoal(goal, reqs, actions, results)
+        if g:
+          goals[g.name] = g
+        else:
+          print("Invalid goal")
 """
 Actions need to know certain things before running. Reqs and other actions should set variables in the goal
 that all other actions can use.

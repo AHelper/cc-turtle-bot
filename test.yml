@@ -118,7 +118,7 @@ goal:
    - need miner
    - need house
   gets:
-   - gets 5 dirt
+   - get 5 dirt
    - lose house
 
 ---

@@ -1,0 +1,18 @@
+Goals contain contextual variables gathered by requirements.  These make
+actions modular and can be specialize to a particular task by changing
+the goal's requirement(s).
+
+block: The name of the block desired to obtain
+ - Breaking
+ - Crafting
+ - Placing
+ - Transfering
+pos: The position being targeted.
+ - Turtle movement
+ - Building/plot position
+turtle: The turtle in context
+ - Can be a turtle to perform actions with or take actions on
+item: The name of the item desired to obtain
+ - Crafting
+ - Using
+ - Transfering
