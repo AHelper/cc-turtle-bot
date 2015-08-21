@@ -442,6 +442,9 @@ class Goal:
 
     self.goals.append(goal)
     
+  def clearChildGoals(self):
+    self.goals = []
+    
   def getResponse(self, turtle):
     assert isinstance(turtle, Turtle)
     
@@ -454,7 +457,7 @@ class Goal:
       if not action.isInvoked():
         self.turtletoaction[turtle] = action
         print(action)
-        self.isResolving = True
+        self.resolving = True
         return action.invoke(turtle)
     self.resolved = True
     return "I guess this goal is done?"
@@ -1214,6 +1217,7 @@ class GoalResolver:
     
     # We can pick goals from our actions list. Find each variation and sort by difficulty
     neededGoals = []
+    goal.clearChildGoals()
     for reqs in reqActions.itervalues():
       if reqs != None and len(reqs) > 0:
         neededGoal = reqs[0]
@@ -1233,7 +1237,10 @@ class GoalResolver:
     # For all goals that are done, remove them from their parent.
     for goal in self.currentGoals:
       if not goal.isResolving():
-        self.__resolve(goal)
+        resolved = self.__resolve(goal)
+        print("Resolving goal {} was {}".format(goal, resolved))
+        if resolved:
+          goal.setResolved(True)
   
   # Dict of goal to array of child goals
   def getGoals(self):
