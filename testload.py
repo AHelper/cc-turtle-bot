@@ -7,6 +7,11 @@ g = GoalResolver()
 s = g.system
 l = GoalLoader(g)
 
+for plot in s.getPlots():
+  s.delPlot(plot)
+for turtle in s.getTurtles():
+  s.delTurtle(turtle)
+
 t = Turtle("1", 0, 0, 0, 0)
 t.setDesignation(Turtle.BUILDER)
 s.addTurtle(t)

@@ -1,6 +1,6 @@
 requirement:
   name: need miner
-  needs: miner
+  needs: turtle(miner)
 
 ---
 

@@ -360,6 +360,7 @@ class Goal:
     self.actions = list(actions)
     self.name = str(name)
     self.resolved = False
+    self.completed = False
     self.goals = []
     self.variables = dict()
     self.turtletoaction = dict()
@@ -419,9 +420,11 @@ class Goal:
     for goal in self.goals:
       if not goal.isResolved():
         return False
-      
-    for pre in self.requirements:
-      if not pre.isResolved():
+    return True
+  
+  def canStartResolving(self):
+    for req in self.requirements:
+      if not req.canClaim():
         return False
     return True
   
@@ -430,6 +433,17 @@ class Goal:
   
   def isResolving(self):
     return self.resolving
+  
+  def setResolved(self, b=True):
+    for child in self.goals:
+      child.setResolved()
+    self.resolved = b
+    
+  def startResolving(self):
+    assert self.canStartResolving()
+    for req in self.requirements:
+      req.claim()
+    self.resolving = True
   
   def getActions(self):
     return self.actions
@@ -445,6 +459,9 @@ class Goal:
   def clearChildGoals(self):
     self.goals = []
     
+  def isCompleted(self):
+    return self.completed
+    
   def getResponse(self, turtle):
     assert isinstance(turtle, Turtle)
     
@@ -459,7 +476,7 @@ class Goal:
         print(action)
         self.resolving = True
         return action.invoke(turtle)
-    self.resolved = True
+    self.completed = True
     return "I guess this goal is done?"
   
   def handleReply(self, turtle, reply):
@@ -504,6 +521,7 @@ class Requirement(GoalComponent):
 class VariableRequirement(Requirement):
   def __init__(self, name, variable, comparison, value):
     Requirement.__init__(self, name=name)
+    assert isinstance(variable, str), "variable must be str"
     self.variable = variable
     self.comparison = comparison
     self.value = value
@@ -557,7 +575,6 @@ class TurtleClaimRequirement(VariableRequirement):
     return self.turtle
   
   def canClaim(self):
-    raise RuntimeError()
     print("Looking to claim a " + designationToStr(self.designation) + " turtle")
     turtles = self.sys.getTurtles()
     for turtle in turtles:
@@ -787,6 +804,7 @@ class Result(GoalComponent):
 class VariableIncreaseAction(Result):
   def __init__(self, name, variable, amount):
     Result.__init__(self, name=name)
+    assert isinstance(variable, str), "variable must be str"
     self.variable = variable
     self.amount = amount
   
@@ -809,6 +827,7 @@ class VariableIncreaseAction(Result):
 class VariableDecreaseAction(Result):
   def __init__(self, name, variable, amount):
     Result.__init__(self, name=name)
+    assert isinstance(variable, str), "variable must be str"
     self.variable = variable
     self.amount = amount
   
@@ -844,9 +863,9 @@ buildHouse = BasicGoal("build house", [needsBuilder, needsHouseResources], [], [
 for b in [True, False]:
   for d in [Turtle.BUILDER, Turtle.CRAFTER, Turtle.FARMER, Turtle.FORRESTER, Turtle.MINER]:
     sys.addVariable(TurtlesVariable(sys, d, b))
-sys.variables["buildings.house"] = NumericVariable("",0)
-sys.variables["buildings.mine"] = NumericVariable("",0)
-sys.variables["resources.dirt"] = NumericVariable("",0)
+sys.variables["buildings.house"] = NumericVariable("buildings.house",0)
+sys.variables["buildings.mine"] = NumericVariable("buildings.mine",0)
+sys.variables["resources.dirt"] = NumericVariable("resources.dirt",0)
 #sys.variables["plots.16.16"] = NumericVariable("",1)
 
 class GoalLoader:
@@ -885,7 +904,7 @@ class GoalLoader:
       if len(parts) == 1:
         parts.append(parts[0])
       return self.resolver.system.variables["plots.{0}.{0}".format(parts[0], parts[1])]
-    m = re.match("turtle\((miner}|builder|crafter|forrester|farmer)\)", varstr, re.IGNORECASE)
+    m = re.match("turtle\((miner|builder|crafter|forrester|farmer)\)", varstr, re.IGNORECASE)
     if m:
       return self.resolver.system.variables["turtles.{}.free".format(m.groups()[0])]
     # Whelp
@@ -913,14 +932,25 @@ class GoalLoader:
         if parts[1] in self.COMPARISONS and (isinstance(parts[0], Variable) and isinstance(parts[2], Variable)):
           print("Variable comparison")
           #return VariableRequirement(req["name"], parts[0] if isinstance(parts[0], Variable) else parts[2], parts[1], self.__loadvariable(parts[2] if isinstance(parts[0], Variable) else parts[0]))
-          return VariableRequirement(req["name"], parts[0], parts[1], parts[2])
+          assert parts[0].name != "", "lvalue must be non-local variable/value"
+          
+          if isinstance(parts[0], TurtlesVariable):
+            return TurtleClaimRequirement(req["name"], parts[0].type, self.resolver.system)
+          else:
+            return VariableRequirement(req["name"], parts[0].name, parts[1], parts[2])
         else:
           print(parts[1] in self.COMPARISONS)
           print("Unk1")
       elif len(parts) == 1:
         #v = self.__loadvariable(parts[0])
         #if v:
-        return VariableRequirement(req["name"], parts[0], ">", NumericVariable("Z",0))
+        assert isinstance(parts[0], Variable), "lvalue is not local or global variable: {} {}".format(parts[0], type(parts[0]))
+        assert parts[0].name != "", "lvalue must be non-local variable/value"
+        
+        if isinstance(parts[0], TurtlesVariable):
+          return TurtleClaimRequirement(req["name"], parts[0].type, self.resolver.system)
+        else:
+          return VariableRequirement(req["name"], parts[0].name, ">", NumericVariable("Z",0))
         #else:
           #print("Unk3")
       else:
@@ -945,14 +975,16 @@ class GoalLoader:
       if len(parts) == 3:
         if parts[1] in self.ASSIGNMENTS and (isinstance(parts[0], Variable) and isinstance(parts[2], Variable)):
           print("Variable modification")
+          assert parts[0].name != "", "lvalue must be non-local variable/value"
           if parts[1] == "+=":
-            return VariableIncreaseAction(result["name"], parts[0], parts[2])
+            return VariableIncreaseAction(result["name"], parts[0].name, parts[2])
           elif parts[1] == "-=":
-            return VariableDecreaseAction(result["name"], parts[0], parts[2])
+            return VariableDecreaseAction(result["name"], parts[0].name, parts[2])
         else:
           print("Unk")
       elif len(parts) == 1:
-        return VariableIncreaseAction(result["name"], parts[0], NumericVariable("",1))
+        assert parts[0].name != "", "lvalue must be non-local variable/value"
+        return VariableIncreaseAction(result["name"], parts[0].name, NumericVariable("",1))
       else:
         print("Unk")
         
@@ -1170,6 +1202,7 @@ class GoalResolver:
   def __init__(self):
     self.currentGoals = []
     self.allGoals = []
+    self.resolvingGoals = []
     self.system = sys
 
   def __isCounterProductive(self, prereqs, postreqs):
@@ -1261,12 +1294,51 @@ class GoalResolver:
   def getAllGoals(self):
     return list(self.allGoals)
   
+  def __getLeafGoals(self, goal):
+    assert isinstance(goal, Goal)
+    if len(goal.getChildGoals()) > 0:
+      rets = []
+      for child in goal.getChildGoals():
+        if child.isResolved() and not child.isCompleted() and not child.isResolving():
+          rets.extend(self.__getLeafGoals(child))
+        return rets
+    else:
+      return [goal]
+    
   def getAction(self, turtle):
+    for goal in self.resolvingGoals:
+      print("Looking at goal currently resolving {}".format(goal))
+      if "turtle" in goal.variables:
+        print("Goal has turtle(s)")
+        print(goal.variables["turtle"])
+        print(turtle)
+        print(self.system.turtles)
+      if "turtle" in goal.variables and turtle in goal.variables["turtle"]:
+        print("Found goal '{}' which uses turtle '{}'".format(goal, turtle))
+        return goal.getResponse(turtle)
+      
+    newLeafs = False
     for goal in self.currentGoals:
       assert isinstance(goal, Goal)
-      if goal.isResolving():
-        print("Goal {} is resolving".format(goal))
-  
+      print("Looking for leaf goals in '{}'".format(goal))
+      leafs = self.__getLeafGoals(goal)
+      
+      if len(leafs) > 0:
+        for leaf in leafs:
+          if leaf:
+            print("  Found leaf goal '{}'".format(leaf))
+            if leaf.canStartResolving():
+              print("  It can start resolving")
+              leaf.startResolving()
+              self.resolvingGoals.append(leaf)
+              newLeafs = True
+    if newLeafs:
+      print("Trying to get action again")
+      return self.getAction(turtle)
+    else:
+      print("No new leafs")
+      return None
+        
   # More?
   # Maybe system shouldn't be passed in on creation of goals, actions, reqs, res.
   #   This class can add them when they get stored.
