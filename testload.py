@@ -13,6 +13,9 @@ s.addTurtle(t)
 
 l.load("test.yml")
 
+for key, val in s.variables.iteritems():
+  print("{} => {}".format(str(key), str(val.value)))
+  
 goals = {}
 for goal in g.getAllGoals():
   print(str(goal))
@@ -21,3 +24,5 @@ for goal in g.getAllGoals():
 g.doGoal(goals["build mine"])
 g.resolveGoals()
 
+print("------ Getting action")
+print(g.getAction(t))

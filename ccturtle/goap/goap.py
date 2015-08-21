@@ -93,6 +93,14 @@ class Variables:
   def __delitem__(self, key):
     del self.items[key]
         
+  def iteritems(self):
+    return self.items.iteritems()
+  
+  def itervalues(self):
+    return self.items.itervalues()
+  
+  def iterkeys(self):
+    return self.items.iterkeys()
 
 class System:
   MAX_PLOT_DIM = 4
@@ -204,7 +212,7 @@ class System:
     
   def getTurtles(self):
     print("SYS: Getting turtles")
-    return self.turtles
+    return self.turtles.values()
 
 """
 Variables are... weird.  They are dynamic and inspect the state of the system.
@@ -217,6 +225,9 @@ class Variable:
     self.name = name
     self.value = None
     self.datatype = datatype
+    
+  def __eq__(self, other):
+    return self.name == other.name
     
   def set(self, value):
     self.value = value
@@ -269,19 +280,22 @@ class BooleanVariable(Variable):
     else:
       return Variable.doComparison(comp, other)
         
-  
 class TurtlesVariable(NumericVariable):
   def __init__(self, sys, type, is_free):
     NumericVariable.__init__(self, "turtles.{}{}".format(designationToStr(type), ".free" if is_free else ""))
     self.sys = sys
     self.type = type
+    self.is_free = is_free
   
   def get(self):
     turtles = self.sys.getTurtles()
     count = 0
     for turtle in turtles:
       if turtle.getDesignation() & self.type:
-        count += 1
+        if self.is_free and self.sys.isClaimed(turtle):
+          continue
+        else:
+          count += 1
     return count
   
 class PlotsVariable(NumericVariable):
@@ -492,12 +506,15 @@ class VariableRequirement(Requirement):
     self.value = value
     
   def canClaim(self):
-    if self.variable in self.system.variables:
+    print(self.name)
+    print(self.variable)
+    if isinstance(self.variable, Variable):
+      var = self.variable
+    elif self.variable in self.system.variables:
       var = self.system.variables[self.variable]
-
-      return var.doComparison(self.comparison, self.value)
     else:
       return False
+    return var.doComparison(self.comparison, self.value)
     
   def claim(self):
     if self.variable in self.system.variables:
@@ -515,7 +532,7 @@ class PlotRequirement(Requirement):
     self.variable = "plots.{0}.{0}".format(size)
     
   def canClaim(self):
-    return True
+    return (self.size/16,self.size/16) in self.system.getSizedPlots()
   
   def claim(self):
     if self.canClaim():
@@ -537,6 +554,8 @@ class TurtleClaimRequirement(VariableRequirement):
     return self.turtle
   
   def canClaim(self):
+    raise RuntimeError()
+    print("Looking to claim a " + designationToStr(self.designation) + " turtle")
     turtles = self.sys.getTurtles()
     for turtle in turtles:
       if not self.sys.isClaimed(turtle):
@@ -689,6 +708,67 @@ class MineAction(Action):
       return False
     else:
       return genRPCCall("mine", self.params)
+    
+class ExploreAction(Action):
+  def __init__(self, name, distance):
+    Action.__init__(self, name)
+    self.distance = distance
+    self.params = {"distance":distance}
+    
+  def validate(self, turtle):
+    if "turtle" not in self.goal:
+      raise RuntimeError("No turtle found")
+    elif turtle != self.goal["turtle"][0]:
+      return False
+    else:
+      return True
+    
+  def invoke(self, turtle):
+    if not self.validate(turtle):
+      return False
+    else:
+      return genRPCCall("expore", self.params)
+    
+  def handleResponse(self, turtle, response):
+    if not self.validate(turtle):
+      return False
+    elif response["type"] == "success":
+      self.completed = True
+      return {}
+    else:
+      self.invoked = False
+      self.completed = False
+      return {"retry":False}
+    
+    
+class DiscoverAction(Action):
+  def __init__(self, name):
+    Action.__init__(self, name)
+    
+  def validate(self, turtle):
+    if "turtle" not in self.goal:
+      raise RuntimeError("No turtle found")
+    elif turtle != self.goal["turtle"][0]:
+      return False
+    else:
+      return True
+    
+  def invoke(self, turtle):
+    if not self.validate(turtle):
+      return False
+    else:
+      return genRPCCall("discovert", {})
+    
+  def handleResponse(self, turtle, response):
+    if not self.validate(turtle):
+      return False
+    elif response["type"] == "success":
+      self.completed = True
+      return {}
+    else:
+      self.invoked = False
+      self.completed = False
+      return {"retry":False}
 
 class Result(GoalComponent):
   def __init__(self, name=""):
@@ -709,10 +789,14 @@ class VariableIncreaseAction(Result):
   
   def getHelpfulness(self, req):
     if isinstance(req, VariableRequirement):
+      print("{} -- {}".format(req.variable, self.variable))
       if req.variable == self.variable:
+        print(1)
         if req.comparison in ["=", ">", ">="]:
+          print(2)
           return self.amount
         elif req.comparison in ["<", "<="]:
+          print(3)
           return -self.amount
     elif isinstance(req, VariableDecreaseAction):
       if req.variable == self.variable:
@@ -833,7 +917,7 @@ class GoalLoader:
       elif len(parts) == 1:
         #v = self.__loadvariable(parts[0])
         #if v:
-        return VariableRequirement(req["name"], parts[0], "!=", NumericVariable("Z",0))
+        return VariableRequirement(req["name"], parts[0], ">", NumericVariable("Z",0))
         #else:
           #print("Unk3")
       else:
@@ -887,6 +971,12 @@ class GoalLoader:
       assert "block" in action["vars"], "needs block name"
       assert "count" in action["vars"], "needs block count"
       return MineAction(name, block_name=action["vars"]["block"], count=int(action["vars"]["count"]))
+    elif re.match("explore", does, re.IGNORECASE):
+      assert "vars" in action, "action needs vars"
+      assert "distance" in action["vars"], "needs distance"
+      return ExploreAction(name, distance=int(action["vars"]["distance"]))
+    elif re.match("discover", does, re.IGNORECASE):
+      return DiscoverAction(name)
     else:
       print("Unk")
       
@@ -1102,6 +1192,7 @@ class GoalResolver:
     print("Trying to " + str(goal))
     for req in goal.getPrereqs():
       print("looking at requirement for " + req.name)
+      print(isinstance(req, TurtleClaimRequirement))
       if req.canClaim():
         print("  Can already claim it")
         reqActions[req] = None
@@ -1109,8 +1200,10 @@ class GoalResolver:
         reqActions[req] = []
         for goal2 in self.allGoals:
           for action in goal2.getPostreqs():
-            print(action)
             s = action.getHelpfulness(req)
+            print("{} has {} helpfulness".format(action, s))
+            if isinstance(s, NumericVariable):
+              s=s.value
             if s > 0:
               print("  action " + action.name + " from " + goal2.name + " has a helpfulness of " + str(s))
               if self.__isCounterProductive(goal.getPostreqs(), goal2.getPostreqs()):
@@ -1128,8 +1221,12 @@ class GoalResolver:
         neededGoals.append(neededGoal[2])
         goalcopy = copy.deepcopy(neededGoal[2])
         goal.addChildGoal(goalcopy)
-        self.__resolve(goalcopy)
-    return neededGoals
+        if not self.__resolve(goalcopy):
+          return False
+      elif reqs != None and len(reqs) == 0:
+        print("Some requirement couldn't be satisfied")
+        return False
+    return True
   
   def resolveGoals(self):
     # For all goals added, resolve any that are yet to be resolved
@@ -1156,6 +1253,12 @@ class GoalResolver:
   
   def getAllGoals(self):
     return list(self.allGoals)
+  
+  def getAction(self, turtle):
+    for goal in self.currentGoals:
+      assert isinstance(goal, Goal)
+      if goal.isResolving():
+        print("Goal {} is resolving".format(goal))
   
   # More?
   # Maybe system shouldn't be passed in on creation of goals, actions, reqs, res.

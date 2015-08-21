@@ -30,6 +30,12 @@ requirement:
 ---
 
 result:
+  name: discover plot
+  gets: plot(16) += 1
+  
+---
+
+result:
   name: get dirt
   gets: resources.dirt += 1
 
@@ -86,6 +92,20 @@ action:
 
 ---
 
+action:
+  name: explore
+  does: explore
+  vars:
+    distance: 32
+  
+---
+
+action:
+  name: discover
+  does: discover
+
+---
+
 goal:
   name: build mine
   needs:
@@ -131,4 +151,12 @@ goal:
   gets:
    - get house
 
+---
 
+goal:
+  name: find new plot
+  needs:
+  - need builder
+  gets:
+  - discover plot
+   
