@@ -43,3 +43,11 @@ assert rpc["action"] == "explore"
 
 print("------ Sending reply")
 print(g.handleReply(t, {"id":rpc["id"],"type":"success"}))
+
+print("------ Getting action")
+rpc = g.getAction(t)
+print(rpc)
+assert rpc["action"] == "discover"
+
+print("------ Sending reply")
+print(g.handleReply(t, {"id":rpc["id"],"type":"success"}))

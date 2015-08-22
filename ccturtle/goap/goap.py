@@ -1354,6 +1354,12 @@ class GoalResolver:
       goal = self.rpcIdToGoal[response["id"]]
       del self.rpcIdToGoal[response["id"]]
       assert isinstance(goal, Goal)
+      # TODO: handle the reply dict to see what should happen with the goal.
+      # If retry is false, destroy the goal and re-resolve it.  Maybe try and hint
+      # at what the problem is?  If trying to build and the plot suddenly isn't clear,
+      # Maybe, redo the build?  Or maybe force a goal to be added?
+      # A flatten goal would unclaim the current goal, decon what's built, then try
+      # it again.
       return goal.handleReply(turtle, response)
         
   # More?
