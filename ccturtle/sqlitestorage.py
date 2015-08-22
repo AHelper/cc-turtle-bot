@@ -42,6 +42,8 @@ class SQLiteStorage:
     cur.execute("CREATE TABLE IF NOT EXISTS plots (id integer PRIMARY KEY, x integer, y integer, z integer)")
     cur.execute("CREATE TABLE IF NOT EXISTS building_plots (bid integer, pid integer)")
     cur.execute("CREATE TABLE IF NOT EXISTS variables (key text primary key, type text, value blob)")
+    cur.execute("CREATE TABLE IF NOT EXISTS containers (id integer PRIMARY KEY, x integer, y integer, z integer, type integer, turtleid integer)")
+    cur.execute("CREATE TABLE IF NOT EXISTS inventory (containerid integer, name text, count integer, id integer PRIMARY KEY)")
     
     self.conn.commit()
     
