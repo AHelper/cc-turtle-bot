@@ -157,6 +157,9 @@ goal:
   name: find new plot
   needs:
   - need builder
+  does:
+  - explore
+  - discover
   gets:
   - discover plot
    

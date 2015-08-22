@@ -30,4 +30,16 @@ g.doGoal(goals["build mine"])
 g.resolveGoals()
 
 print("------ Getting action")
-print(g.getAction(t))
+rpc = g.getAction(t)
+print(rpc)
+assert rpc["action"] == "explore"
+print("------ Sending reply")
+print(g.handleReply(t, {"id":rpc["id"],"type":"failure"}))
+
+print("------ Getting action")
+rpc = g.getAction(t)
+print(rpc)
+assert rpc["action"] == "explore"
+
+print("------ Sending reply")
+print(g.handleReply(t, {"id":rpc["id"],"type":"success"}))

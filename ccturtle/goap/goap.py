@@ -193,7 +193,10 @@ class System:
     
   def addTurtle(self, turtle):
     self.sql.saveTurtle(turtle)
+    print("Added turtle {} => {}".format(turtle.id, turtle))
     self.turtles[turtle.id] = turtle
+    print("Stored turtle {}".format(self.turtles[turtle.id]))
+    print(self)
     
   def delTurtle(self, turtle):
     del self.turtles[turtle.id]
@@ -212,7 +215,9 @@ class System:
     
   def getTurtles(self):
     print("SYS: Getting turtles")
-    return self.turtles.values()
+    print(self.turtles)
+    print(self)
+    return self.turtles.itervalues()
 
 """
 Variables are... weird.  They are dynamic and inspect the state of the system.
@@ -471,7 +476,7 @@ class Goal:
         return False
     # Get the next action to perform and send its command
     for action in self.actions:
-      if not action.isInvoked():
+      if not action.isInvoked() and not action.isCompleted():
         self.turtletoaction[turtle] = action
         print(action)
         self.resolving = True
@@ -564,11 +569,10 @@ class PlotRequirement(Requirement):
       return False
     
 class TurtleClaimRequirement(VariableRequirement):
-  def __init__(self, name, designation, sys):
+  def __init__(self, name, designation):
     self.designation = designation
     self.variable = {Turtle.MINER:"turtles.miner.free", Turtle.BUILDER:"turtles.builder.free",Turtle.CRAFTER:"turtles.crafter.free"}[designation]
     VariableRequirement.__init__(self, name, self.variable, ">", NumericVariable("",0))
-    self.sys = sys
     self.turtle = None
   
   def getTurtle(self):
@@ -576,22 +580,23 @@ class TurtleClaimRequirement(VariableRequirement):
   
   def canClaim(self):
     print("Looking to claim a " + designationToStr(self.designation) + " turtle")
-    turtles = self.sys.getTurtles()
+    turtles = self.system.getTurtles()
     for turtle in turtles:
-      if not self.sys.isClaimed(turtle):
+      if not self.system.isClaimed(turtle):
         if turtle.getDesignation() & self.designation:
           return True
     return False
     
   def claim(self):
-    turtles = self.sys.getTurtles()
+    turtles = self.system.getTurtles()
+    print(turtles)
     for turtle in turtles:
-      print(turtle.getDesignation())
+      print(turtle)
       print(self.designation)
-      if not self.sys.isClaimed(turtle):
+      if not self.system.isClaimed(turtle):
         if turtle.getDesignation() & self.designation:
           # Claim
-          self.sys.claimTurtle(turtle)
+          self.system.claimTurtle(turtle)
           self.turtle = turtle
           turtle.setGoal(self.goal)
           self.claimed = True
@@ -747,7 +752,7 @@ class ExploreAction(Action):
     if not self.validate(turtle):
       return False
     else:
-      return genRPCCall("expore", self.params)
+      return genRPCCall("explore", self.params)
     
   def handleResponse(self, turtle, response):
     if not self.validate(turtle):
@@ -777,7 +782,7 @@ class DiscoverAction(Action):
     if not self.validate(turtle):
       return False
     else:
-      return genRPCCall("discovert", {})
+      return genRPCCall("discover", {})
     
   def handleResponse(self, turtle, response):
     if not self.validate(turtle):
@@ -844,8 +849,8 @@ class VariableDecreaseAction(Result):
     return 0
   
 sys = System("goap.db")
-needsMiner = TurtleClaimRequirement("need miner", Turtle.MINER, sys)
-needsBuilder = TurtleClaimRequirement("need builder", Turtle.BUILDER, sys)
+needsMiner = TurtleClaimRequirement("need miner", Turtle.MINER)
+needsBuilder = TurtleClaimRequirement("need builder", Turtle.BUILDER,)
 needsHouseResources = VariableRequirement("need house resources", "resources.dirt", ">=", NumericVariable("",5))
 needsMine = VariableRequirement("need mine", "buildings.mine", ">=", NumericVariable("",1))
 needs16Plot = PlotRequirement("need 16x16 plot", 16)
@@ -935,7 +940,7 @@ class GoalLoader:
           assert parts[0].name != "", "lvalue must be non-local variable/value"
           
           if isinstance(parts[0], TurtlesVariable):
-            return TurtleClaimRequirement(req["name"], parts[0].type, self.resolver.system)
+            return TurtleClaimRequirement(req["name"], parts[0].type)
           else:
             return VariableRequirement(req["name"], parts[0].name, parts[1], parts[2])
         else:
@@ -948,7 +953,7 @@ class GoalLoader:
         assert parts[0].name != "", "lvalue must be non-local variable/value"
         
         if isinstance(parts[0], TurtlesVariable):
-          return TurtleClaimRequirement(req["name"], parts[0].type, self.resolver.system)
+          return TurtleClaimRequirement(req["name"], parts[0].type)
         else:
           return VariableRequirement(req["name"], parts[0].name, ">", NumericVariable("Z",0))
         #else:
@@ -1204,6 +1209,7 @@ class GoalResolver:
     self.allGoals = []
     self.resolvingGoals = []
     self.system = sys
+    self.rpcIdToGoal = {}
 
   def __isCounterProductive(self, prereqs, postreqs):
     for req in prereqs:
@@ -1310,12 +1316,12 @@ class GoalResolver:
       print("Looking at goal currently resolving {}".format(goal))
       if "turtle" in goal.variables:
         print("Goal has turtle(s)")
-        print(goal.variables["turtle"])
-        print(turtle)
-        print(self.system.turtles)
       if "turtle" in goal.variables and turtle in goal.variables["turtle"]:
         print("Found goal '{}' which uses turtle '{}'".format(goal, turtle))
-        return goal.getResponse(turtle)
+        rpc = goal.getResponse(turtle)
+        if rpc and isinstance(rpc, dict):
+          self.rpcIdToGoal[rpc["id"]] = goal
+        return rpc
       
     newLeafs = False
     for goal in self.currentGoals:
@@ -1338,6 +1344,17 @@ class GoalResolver:
     else:
       print("No new leafs")
       return None
+    
+  def handleReply(self, turtle, response):
+    assert isinstance(response, dict)
+    assert "id" in response
+    
+    if response["id"] in self.rpcIdToGoal:
+      print("I was expecting this response!")
+      goal = self.rpcIdToGoal[response["id"]]
+      del self.rpcIdToGoal[response["id"]]
+      assert isinstance(goal, Goal)
+      return goal.handleReply(turtle, response)
         
   # More?
   # Maybe system shouldn't be passed in on creation of goals, actions, reqs, res.
