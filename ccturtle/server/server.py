@@ -41,10 +41,13 @@ from ccturtle.turtle import Turtle
 
 from ccturtle.server import handlers
 import ccturtle.server.json
-from ccturtle.system import System
+#from ccturtle.system import System
+from ccturtle.goap.goap import GoalResolver
 
 def createApp():
-  sys = System()
+  #sys = System()
+  resolver = GoalResolver()
+  validator = RequestValidator()
           
   settings = {
     'default_handler_class': ccturtle.server.json.JSONErrorHandler,
@@ -52,7 +55,7 @@ def createApp():
     'debug': True
   }
 
-  init = dict(sys = sys)
+  init = dict(sys = resolver.sys)
 
   routes = [
     (r"/pathing/get", handlers.PathingGetHandler, init),
@@ -69,7 +72,7 @@ def createApp():
     (r"/static/(.*)", tornado.web.StaticFileHandler, {'path': 'static'})
   ]
 
-  sys.validator.setup({
+  validator.setup({
     handlers.PathingQueryHandler: {
       "source": {
         "x":(int,float),
@@ -113,13 +116,13 @@ def createApp():
     }
   }, routes)
   
-  return (sys, tornado.web.Application(routes, **settings))
+  return (resolver, validator, tornado.web.Application(routes, **settings))
 
 def start():
-  sys, app = createApp()
+  resolver, validator, app = createApp()
   
   tornado.log.access_log.setLevel(logging.DEBUG)
-  print(sys.validator.dump())
+  print(validator.dump())
   
   port = 34299
   app.listen(port)
@@ -129,4 +132,4 @@ def start():
     tornado.ioloop.IOLoop.instance().start()
   except KeyboardInterrupt:
     pass
-  sys.save()
+  resolver.system.save()

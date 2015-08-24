@@ -68,6 +68,13 @@ class Container(SQLiteStorageItem):
   def getId(self):
     return self.id
   
+  def clear(self):
+    resources = Resource.loadAllFor(self)
+    
+    for resource in resources:
+      resource.setCount(0)
+      resource.save()
+  
 class Resource:
   @staticmethod
   def loadAllFor(container, sql):
