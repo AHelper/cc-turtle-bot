@@ -21,6 +21,7 @@ import copy
 import re
 from ccturtle.turtle import Turtle, designationToStr
 from ccturtle.system import SQLiteStorage
+from ccturtle.pathing import Pathing
 
 from yaml import load, load_all, dump, dump_all
 try:
@@ -115,7 +116,9 @@ class System:
     self.variables = Variables(self)
     self.plots = {}
     self.sizedplotcache = {}
-    self.buildings = dict() # key -> (building name, mk)
+    self.buildings = {} # key -> (building name, mk)
+    self.containers = {}
+    self.pathing = Pathing() # TODO: Add in a path for the octrees
     # TODO, integrate SQL Storage
     self.sql = SQLiteStorage(path) 
     
@@ -133,6 +136,11 @@ class System:
     for turtleId in turtleIds:
       turtle = self.sql.loadTurtle(turtleId)
       self.turtles[turtleId] = turtle
+    
+    containerIds = self.sql.getAllContainerIds()
+    for containerId in containerIds:
+      container = self.sql.loadContainer(containerId)
+      self.containers[containerId] = container
     
   def __updateplotcache(self):
     # This is going to be bad for performance...
@@ -160,6 +168,9 @@ class System:
       self.sql.savePlot(plot)
     for turtle in self.turtles.itervalues():
       self.sql.saveTurtle(turtle)
+    for container in self.containers.itervalues():
+      self.sql.saveContainer(container)
+    self.pathing.save()
         
   def addBuilding(self, building): #x, y, z, building_name, mk=1):
     self.sql.saveBuilding(building)
@@ -218,6 +229,34 @@ class System:
     print(self.turtles)
     print(self)
     return self.turtles.itervalues()
+  
+  def addContainer(self, container):
+    self.sql.saveContainer(container)
+    self.containers[container.id] = container
+    
+  def delContainer(self, container):
+    del self.containers[container.id]
+    self.sql.delContainer(container)
+  
+  def getContainers(self):
+    print("SYSL Getting containers")
+    return self.containers.itervalues()
+  
+  # Utility functions from old System
+  def hasTurtle(self, name):
+    return self.getTurtle(name) != None
+  
+  def getTurtle(self, name):
+    for turtle in self.turtles.itervalues():
+      if turtle.name == name:
+        return turtle
+    return None
+  
+  def findContainer(self, x, y, z):
+    for container in self.containers.itervalues():
+      if container.x == x and container.y == y and container.z == z:
+        return container
+    return None
 
 """
 Variables are... weird.  They are dynamic and inspect the state of the system.
@@ -1343,6 +1382,7 @@ class GoalResolver:
       return self.getAction(turtle)
     else:
       print("No new leafs")
+      # TODO: Add in idle actions! Things to keep them busy, like mining or exploring.
       return None
     
   def handleReply(self, turtle, response):

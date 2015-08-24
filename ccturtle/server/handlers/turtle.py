@@ -22,12 +22,13 @@ from ccturtle.turtle import Turtle
 from ccturtle.server.json import JSONHandler
     
 class RegisterTurtleHandler(JSONHandler):
-  def initialize(self, sys):
+  def initialize(self, sys, validator):
     self.sys = sys
+    self.validator = validator
     
   def post(self, name):
     req = self.read_json()
-    if not self.sys.validator.validate(RegisterTurtleHandler, req):
+    if not self.validator.validate(RegisterTurtleHandler, req):
       print("Failed to validate")
       raise HTTPError(400)
     
@@ -69,8 +70,9 @@ class TurtleActionHandler(JSONHandler):
       self.write_json({"type":"success","action":self.sys.getTurtle(id).getCurrentTaskInfo()["action"],"data":self.sys.getTurtle(id).getCurrentTaskInfo()["data"]})
       
 class TurtlePositionHandler(JSONHandler):
-  def initialize(self, sys):
+  def initialize(self, sys, validator):
     self.sys = sys
+    self.validator = validator
     
   def get(self, id):
     if not self.sys.hasTurtle(id):
@@ -83,9 +85,43 @@ class TurtlePositionHandler(JSONHandler):
       raise HTTPError(404)
     else:
       req = self.read_json()
-      if not self.sys.validator.validate(TurtlePositionHandler, req):
+      if not self.validator.validate(TurtlePositionHandler, req):
         raise HTTPError(400)
       else:
         t = self.sys.getTurtle(id)
         t.setPosition(req["x"],req["y"],req["z"],req["facing"])
         self.write_json({"type":"success"})
+        
+class TurtleGetActionHandler(JSONHandler):
+  def initialize(self, sys, resolver):
+    self.resolver = resolver
+    self.sys = sys
+  
+  def get(self, id):
+    if not self.sys.hasTurtle(id):
+      raise HTTPError(404)
+    else:
+      t = self.sys.getTurtle(id)
+      rpc = self.resolver.getAction(t)
+      
+      if rpc:
+        self.write_json(rpc)
+      else:
+        raise HTTPError(203) # No content
+      
+class TurtleResponseHandler(JSONHandler):
+  def initialize(self, sys, resolver, validator):
+    self.resolver = resolver
+    self.sys = sys
+    self.validator = validator
+    
+  def post(self, id):
+    if not self.sys.hasTurtle(id):
+      raise HTTPError(404)
+    else:
+      req = self.read_json()
+      t = self.sys.getTurtle(id)
+      # Don't use the validator, JSON-RPC has special rules
+      # GOAP should handle it
+      self.resolver.handleReply(t, req)
+      self.write_json({"type":"success"})

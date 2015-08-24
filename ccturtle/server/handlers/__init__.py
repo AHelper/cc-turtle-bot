@@ -20,5 +20,6 @@ from listing import ListingHandler
 from logging import LoggingHandler
 from pathing import PathingQueryHandler, PathingSetHandler, PathingGetHandler
 from startup import StartupHandler
-from turtle import RegisterTurtleHandler, UnregisterTurtleHandler, TurtleStatusHandler, TurtleActionHandler, TurtlePositionHandler
-
+from turtle import RegisterTurtleHandler, UnregisterTurtleHandler, TurtleStatusHandler, TurtleActionHandler, TurtlePositionHandler, TurtleGetActionHandler, TurtleResponseHandler
+from container import ContainerClearHandler, ContainerGetHandler, ContainerPutHandler, ContainerSetHandler, ContainerTakeHandler
+from goal import GoalsAddHandler, GoalsListHandler, GoalsRemoveHandler

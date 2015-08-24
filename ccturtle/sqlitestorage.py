@@ -130,6 +130,18 @@ class SQLiteStorage:
   def delBuilding(self, building):
     self.__del("building", building)
     
+  def getAllContainerIds(self):
+    return self.__getAllIds("containers")
+  
+  def loadContainer(self, id):
+    return self.__load("containers", "id, x, y, z, type, turtleid", id, Container)
+    
+  def saveContainer(self, container):
+    self.__save("containers", "id, x, y, z, type, turtleid", container)
+    
+  def delContainer(self, container):
+    self.__del("container", container)
+  
   def saveVariable(self, key, value, type):
     cur = self.conn.cursor()
     

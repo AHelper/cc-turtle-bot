@@ -54,8 +54,12 @@ def createApp():
     'default_handler_args': dict(status_code=404),
     'debug': True
   }
-
-  init = dict(sys = resolver.sys)
+  
+  init = {
+    'sys': resolver.system,
+    'resolver': resolver,
+    'validator': validator
+  }
 
   routes = [
     (r"/pathing/get", handlers.PathingGetHandler, init),
@@ -65,7 +69,17 @@ def createApp():
     (r"/turtle/([^/]+)/unregister", handlers.UnregisterTurtleHandler, init),
     (r"/turtle/([^/]+)/status", handlers.TurtleStatusHandler, init),
     (r"/turtle/([^/]+)/position", handlers.TurtlePositionHandler, init),
+    (r"/turtle/([^/]+)/getAction", handlers.TurtleGetActionHandler, init),
+    (r"/turtle/([^/]+)/response", handlers.TurtleResponseHandler, init),
+    (r"/containers/get", handlers.ContainerGetHandler, init),
+    (r"/containers/([^/]+)/put", handlers.ContainerPutHandler, init),
+    (r"/containers/([^/]+)/take", handlers.ContainerTakeHandler, init),
+    (r"/containers/([^/]+)/clear", handlers.ContainerClearHandler, init),
+    (r"/containers/([^/]+)/set", handlers.ContainerSetHandler, init),
     (r"/logging/([^/]+)/(.*)", handlers.LoggingHandler, init),
+    (r"/goals", handlers.GoalsListHandler, init),
+    (r"/goals/add", handlers.GoalsAddHandler, init),
+    (r"/goals/remove", handlers.GoalsRemoveHandler, init),
     (r"/resthelp", handlers.HelpHandler, init),
     (r"/listing",handlers.ListingHandler, init),
     (r"/startup",handlers.StartupHandler, init),
@@ -113,6 +127,26 @@ def createApp():
       "y":(int,float),
       "z":(int,float),
       "facing":int,
+    },
+    handlers.TurtleGetActionHandler: {
+    },
+    handlers.TurtleResponseHandler: {
+    }, # Custom
+    handlers.ContainerClearHandler: {
+    },
+    handlers.ContainerGetHandler: {
+    },
+    handlers.ContainerPutHandler: {
+    },
+    handlers.ContainerSetHandler: {
+    },
+    handlers.ContainerTakeHandler: {
+    },
+    handlers.GoalsAddHandler: {
+    },
+    handlers.GoalsListHandler: {
+    },
+    handlers.GoalsRemoveHandler: {
     }
   }, routes)
   
