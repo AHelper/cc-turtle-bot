@@ -22,7 +22,7 @@ from ccturtle.turtle import Turtle
 from ccturtle.server.json import JSONHandler
     
 class RegisterTurtleHandler(JSONHandler):
-  def initialize(self, sys, validator):
+  def initialize(self, sys, resolver, validator):
     self.sys = sys
     self.validator = validator
     
@@ -39,7 +39,7 @@ class RegisterTurtleHandler(JSONHandler):
       self.write_json({"type":"failure","message":"turtle alread exists"})
       
 class UnregisterTurtleHandler(JSONHandler):
-  def initialize(self, sys):
+  def initialize(self, sys, resolver, validator):
     self.sys = sys
     
   def post(self, name):    
@@ -50,7 +50,7 @@ class UnregisterTurtleHandler(JSONHandler):
       self.write_json({"type":"failure","message":"turtle alread exists"})
       
 class TurtleStatusHandler(JSONHandler):
-  def initialize(self, sys):
+  def initialize(self, sys, resolver, validator):
     self.sys = sys
     
   def get(self, turtle_name):
@@ -60,7 +60,7 @@ class TurtleStatusHandler(JSONHandler):
       self.write_json({"type":"success","current":self.sys.getTurtle(turtle_name).getHumanReadableCurrentTask(),"future":self.sys.getTurtle(turtle_name).getHumanReadableFutureTasks()})
 
 class TurtleActionHandler(JSONHandler):
-  def initialize(self, sys):
+  def initialize(self, sys, resolver, validator):
     self.sys = sys
     
   def get(self, id):
@@ -70,7 +70,7 @@ class TurtleActionHandler(JSONHandler):
       self.write_json({"type":"success","action":self.sys.getTurtle(id).getCurrentTaskInfo()["action"],"data":self.sys.getTurtle(id).getCurrentTaskInfo()["data"]})
       
 class TurtlePositionHandler(JSONHandler):
-  def initialize(self, sys, validator):
+  def initialize(self, sys, resolver, validator):
     self.sys = sys
     self.validator = validator
     
@@ -93,7 +93,7 @@ class TurtlePositionHandler(JSONHandler):
         self.write_json({"type":"success"})
         
 class TurtleGetActionHandler(JSONHandler):
-  def initialize(self, sys, resolver):
+  def initialize(self, sys, resolver, validator):
     self.resolver = resolver
     self.sys = sys
   

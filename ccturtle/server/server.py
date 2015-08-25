@@ -42,12 +42,13 @@ from ccturtle.turtle import Turtle
 from ccturtle.server import handlers
 import ccturtle.server.json
 #from ccturtle.system import System
-from ccturtle.goap.goap import GoalResolver
+from ccturtle.goap.goap import GoalResolver, GoalLoader
 
 def createApp():
   #sys = System()
   resolver = GoalResolver()
   validator = RequestValidator()
+  loader = GoalLoader(resolver)
           
   settings = {
     'default_handler_class': ccturtle.server.json.JSONErrorHandler,
@@ -149,6 +150,8 @@ def createApp():
     handlers.GoalsRemoveHandler: {
     }
   }, routes)
+    
+  loader.load("/home/HAL/projects/turtle/test.yml")
   
   return (resolver, validator, tornado.web.Application(routes, **settings))
 

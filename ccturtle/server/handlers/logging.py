@@ -23,7 +23,7 @@ import tornado.log
 from ccturtle.server.json import JSONHandler
     
 class LoggingHandler(JSONHandler):
-  def initialize(self, sys):
+  def initialize(self, sys, resolver, validator):
     self.sys = sys
     
   def post(self, id, level):

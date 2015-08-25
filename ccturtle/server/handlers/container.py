@@ -22,7 +22,7 @@ from ccturtle.turtle import Turtle
 from ccturtle.server.json import JSONHandler
 
 class ContainerGetHandler(JSONHandler):
-  def initialize(self, sys, validator):
+  def initialize(self, sys, resolver, validator):
     self.sys = sys
     self.validator = validator
     
@@ -35,7 +35,7 @@ class ContainerGetHandler(JSONHandler):
       pass
       
 class ContainerPutHandler(JSONHandler):
-  def initialize(self, sys, validator):
+  def initialize(self, sys, resolver, validator):
     self.sys = sys
     self.validator = validator
     
@@ -51,7 +51,7 @@ class ContainerPutHandler(JSONHandler):
         pass
       
 class ContainerTakeHandler(JSONHandler):
-  def initialize(self, sys, validator):
+  def initialize(self, sys, resolver, validator):
     self.sys = sys
     self.validator = validator
     
@@ -67,7 +67,7 @@ class ContainerTakeHandler(JSONHandler):
         pass
       
 class ContainerClearHandler(JSONHandler):
-  def initialize(self, sys, validator):
+  def initialize(self, sys, resolver, validator):
     self.sys = sys
     self.validator = validator
     
@@ -79,7 +79,7 @@ class ContainerClearHandler(JSONHandler):
       pass
       
 class ContainerSetHandler(JSONHandler):
-  def initialize(self, sys, validator):
+  def initialize(self, sys, resolver, validator):
     self.sys = sys
     self.validator = validator
     

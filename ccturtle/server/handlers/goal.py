@@ -21,7 +21,7 @@ from tornado.web import HTTPError
 from ccturtle.server.json import JSONHandler
 
 class GoalsListHandler(JSONHandler):
-  def initialize(self, resolver, validator):
+  def initialize(self, sys, resolver, validator):
     self.resolver = resolver
     self.validator = validator
     
@@ -30,7 +30,7 @@ class GoalsListHandler(JSONHandler):
     pass
   
 class GoalsAddHandler(JSONHandler):
-  def initialize(self, resolver, validator):
+  def initialize(self, sys, resolver, validator):
     self.resolver = resolver
     self.validator = validator
     
@@ -43,7 +43,7 @@ class GoalsAddHandler(JSONHandler):
       pass
   
 class GoalsRemoveHandler(JSONHandler):
-  def initialize(self, resolver, validator):
+  def initialize(self, sys, resolver, validator):
     self.resolver = resolver
     self.validator = validator
     

@@ -22,7 +22,7 @@ from glob import glob
 from ccturtle.server.json import JSONHandler
       
 class ListingHandler(JSONHandler):
-  def initialize(self, sys):
+  def initialize(self, sys, resolver, validator):
     self.sys = sys
     
   def get(self):

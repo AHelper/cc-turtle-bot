@@ -21,7 +21,7 @@ from tornado.web import HTTPError
 from ccturtle.server.json import JSONHandler
 
 class PathingQueryHandler(JSONHandler):
-  def initialize(self, sys):
+  def initialize(self, sys, resolver, validator):
     self.sys = sys
     
   def post(self):
@@ -40,7 +40,7 @@ class PathingQueryHandler(JSONHandler):
       self.write_json({"type":"success","path":path})
 
 class PathingSetHandler(JSONHandler):
-  def initialize(self, sys):
+  def initialize(self, sys, resolver, validator):
     self.sys = sys
     
   def post(self):
@@ -54,7 +54,7 @@ class PathingSetHandler(JSONHandler):
     self.write_json({"response":"success","message":"point set"})
 
 class PathingGetHandler(JSONHandler):
-  def initialize(self, sys):
+  def initialize(self, sys, resolver, validator):
     self.sys = sys
     
   def post(self):

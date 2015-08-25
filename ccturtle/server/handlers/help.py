@@ -20,7 +20,7 @@
 import tornado.web
 
 class HelpHandler(tornado.web.RequestHandler):
-  def initialize(self, sys):
+  def initialize(self, sys, resolver, validator):
     self.sys = sys
     
   def get(self):
