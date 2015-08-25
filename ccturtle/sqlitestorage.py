@@ -87,10 +87,12 @@ class SQLiteStorage:
     
     self.conn.commit()
     
-  def __del(self, table, storage_item):
+  def __del(self, table, id):
     cur = self.conn.cursor()
     
-    cur.execute("DELETE FROM {} WHERE id = ?".format(table), storage_item.sql()[0])
+    print(id)
+    print(type(id))
+    cur.execute("DELETE FROM {} WHERE id = ?".format(table), (id,)) # id = storage_item.sql()[0]
     
     self.conn.commit()
     

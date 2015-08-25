@@ -36,10 +36,10 @@ class Turtle(SQLiteStorageItem):
   CRAFTER =   0x02
   FORRESTER = 0x04
   FARMER =    0x08
-  BUILDER =   MINER | FORRESTER | FARMER
+  BUILDER =   0x00 # MINER | FORRESTER | FARMER
   
   
-  def __init__(self, unique_name, x, y, z, facing, id=None, civ=None, designation=None):
+  def __init__(self, unique_name, x, y, z, facing, id=None, civ=None, designation=BUILDER):
     self.x = x
     self.y = y
     self.z = z

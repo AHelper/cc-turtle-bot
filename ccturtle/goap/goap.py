@@ -335,7 +335,7 @@ class TurtlesVariable(NumericVariable):
     turtles = self.sys.getTurtles()
     count = 0
     for turtle in turtles:
-      if turtle.getDesignation() & self.type:
+      if (turtle.getDesignation() & self.type) == self.type:
         if self.is_free and self.sys.isClaimed(turtle):
           continue
         else:
@@ -534,8 +534,8 @@ class Goal:
   def __str__(self):
     return self.name
   
-  def __eq__(self, other):
-    raise NotImplementedError()
+  def __hash__(self):
+    return id(self)
   
 class BasicGoal(Goal):
   def __init__(self, name, requirements, actions, results):
@@ -1257,14 +1257,24 @@ class GoalResolver:
           return True
     return False
   
-  def doGoal(self, goal):
-    self.currentGoals.append(copy.deepcopy(goal))
+  def doGoal(self, goal, name=None):
+    clone = copy.deepcopy(goal)
+    
+    if name:
+      clone.name = name
+      
+    self.currentGoals.append(clone)
     self.resolveGoals()
   
   def addGoal(self, goal):
     assert isinstance(goal, Goal)
     self.allGoals.append(goal)
     goal.setSystem(self.system)
+    
+  def stopGoal(self, goal):
+    assert goal in self.currentGoals
+    
+    del self.currentGoals[goal]
   
   def __resolve(self, goal):
     all = True

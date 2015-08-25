@@ -36,18 +36,18 @@ class RegisterTurtleHandler(JSONHandler):
       self.sys.addTurtle(Turtle(name, req['x'], req['y'], req['z'], req['facing']))
       self.write_json({"type":"success"})
     else:
-      self.write_json({"type":"failure","message":"turtle alread exists"})
+      self.write_json({"type":"failure","message":"turtle already exists"})
       
 class UnregisterTurtleHandler(JSONHandler):
   def initialize(self, sys, resolver, validator):
     self.sys = sys
     
   def post(self, name):    
-    if not self.sys.hasTurtle(name):
-      self.sys.delTurtle(name)
+    if self.sys.hasTurtle(name):
+      self.sys.delTurtle(self.sys.getTurtle(name))
       self.write_json({"type":"success"})
     else:
-      self.write_json({"type":"failure","message":"turtle alread exists"})
+      self.write_json({"type":"failure","message":"turtle doesn't exists"})
       
 class TurtleStatusHandler(JSONHandler):
   def initialize(self, sys, resolver, validator):

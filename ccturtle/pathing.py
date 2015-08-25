@@ -23,7 +23,7 @@ class Pathing:
   def __init__(self):
     self.octrees = {}
     self.size = 256
-    self.basepath = "/opt/chunks/"
+    self.basepath = "chunks/"
     
   def save(self):
     if not os.path.isdir(self.basepath):

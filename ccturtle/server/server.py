@@ -144,6 +144,7 @@ def createApp():
     handlers.ContainerTakeHandler: {
     },
     handlers.GoalsAddHandler: {
+      "goal":(str,unicode)
     },
     handlers.GoalsListHandler: {
     },
@@ -151,7 +152,7 @@ def createApp():
     }
   }, routes)
     
-  loader.load("/home/HAL/projects/turtle/test.yml")
+  loader.load(os.path.curdir + "/test.yml")
   
   return (resolver, validator, tornado.web.Application(routes, **settings))
 
