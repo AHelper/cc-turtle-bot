@@ -31,13 +31,34 @@ run_rpc() {
   fi
 }
 
-run_rpc turtle/18/register '{"x":0,"y":0,"z":0,"facing":0}' success
-run_rpc turtle/18/status '' success
-run_rpc turtle/18/getAction '' '203'
+echo Registering turtle
+run_rpc turtle/1/register '{"x":0,"y":0,"z":0,"facing":0}' success
+run_rpc turtle/1/status '' success
+run_rpc turtle/1/getAction '' '203'
+
+echo Adding goal
 run_rpc goals/add '{"goal":"find new plot"}' success
 run_rpc goals '' 'active={find new plot'
-run_rpc turtle/18/getAction '' 'action="explore"'
-run_rpc turtle/18/response '{"id":1,"type":"success"}' success
-run_rpc turtle/18/getAction '' 'action="discover"'
-run_rpc turtle/18/response '{"id":2,"type":"success"}' success
-run_rpc turtle/18/getAction '' '203'
+
+echo Running all goal actions
+run_rpc turtle/1/getAction '' 'action="explore"'
+run_rpc turtle/1/response '{"id":1,"type":"success"}' success
+run_rpc turtle/1/getAction '' 'action="discover"'
+run_rpc turtle/1/response '{"id":2,"type":"success"}' success
+run_rpc turtle/1/getAction '' '203'
+
+echo Adding another goal
+run_rpc goals/add '{"goal":"find new plot"}' success
+run_rpc goals '' 'active={find new plot'
+
+echo Adding another turtle, verifying this new turtle can\'t be used for this goal
+run_rpc turtle/2/register '{"x":0,"y":0,"z":0,"facing":0}' success
+run_rpc turtle/2/status '' success
+run_rpc turtle/2/getAction '' '203'
+
+echo Running all goals for the first turtle
+run_rpc turtle/1/getAction '' 'action="explore"'
+run_rpc turtle/1/response '{"id":1,"type":"success"}' success
+run_rpc turtle/1/getAction '' 'action="discover"'
+run_rpc turtle/1/response '{"id":2,"type":"success"}' success
+run_rpc turtle/1/getAction '' '203'
