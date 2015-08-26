@@ -5,7 +5,6 @@ RUN dnf install python-pip -y
 RUN pip install tornado pyyaml
 
 # Use last
-ADD files /opt
 WORKDIR /opt
-RUN ls
+ADD files /opt
 RUN python setup.py install

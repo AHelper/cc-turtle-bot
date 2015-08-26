@@ -486,7 +486,10 @@ class Goal:
   def startResolving(self):
     assert self.canStartResolving()
     for req in self.requirements:
-      req.claim()
+      if not req.claim():
+        print("Requirement '<{}>{}' went insane, invalidating goal".format(req.__class__.__name__,req))
+        self.completed = True
+        raise RuntimeError("Insane Requirement")
     self.resolving = True
   
   def getActions(self):
@@ -521,7 +524,8 @@ class Goal:
         self.resolving = True
         return action.invoke(turtle)
     self.completed = True
-    return "I guess this goal is done?"
+    print("Goal finished!!!")
+    return None
   
   def handleReply(self, turtle, reply):
     print("Got a reply!")
@@ -621,9 +625,13 @@ class TurtleClaimRequirement(VariableRequirement):
     print("Looking to claim a " + designationToStr(self.designation) + " turtle")
     turtles = self.system.getTurtles()
     for turtle in turtles:
+      print("  Looking at {}".format(str(turtle)))
       if not self.system.isClaimed(turtle):
-        if turtle.getDesignation() & self.designation:
+        print("  Not claimed")
+        if (turtle.getDesignation() & self.designation) == self.designation:
           return True
+        else:
+          print("  Wrong designation, has {}, want {}".format(int(turtle.getDesignation()), int(self.designation)))
     return False
     
   def claim(self):
@@ -633,7 +641,7 @@ class TurtleClaimRequirement(VariableRequirement):
       print(turtle)
       print(self.designation)
       if not self.system.isClaimed(turtle):
-        if turtle.getDesignation() & self.designation:
+        if (turtle.getDesignation() & self.designation) == self.designation:
           # Claim
           self.system.claimTurtle(turtle)
           self.turtle = turtle
@@ -1370,7 +1378,7 @@ class GoalResolver:
         rpc = goal.getResponse(turtle)
         if rpc and isinstance(rpc, dict):
           self.rpcIdToGoal[rpc["id"]] = goal
-        return rpc
+          return rpc
       
     newLeafs = False
     for goal in self.currentGoals:
