@@ -9,7 +9,8 @@ setup(
   license = "GPLv3",
   packages=find_packages(), # ["ccturtle"],
   install_requires=[
-    "tornado"
+    "tornado",
+    "pyyaml"
   ],
   entry_points={
     "console_scripts": ["ccturtlesrv = ccturtle.server.server:start"]
