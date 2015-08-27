@@ -59,7 +59,11 @@ class GoalsAddHandler(JSONHandler):
     else:
       for goal in self.resolver.getAllGoals():
         if goal.name == req["goal"]:
-          self.resolver.doGoal(goal)
+          print("Adding goal")
+          name = None
+          if "name" in req:
+            name = req["name"]
+          self.resolver.doGoal(goal, name)
           self.write_json({"type":"success"})
           return
       raise HTTPError(404)

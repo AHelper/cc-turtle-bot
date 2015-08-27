@@ -527,6 +527,13 @@ class Goal:
     print("Goal finished!!!")
     return None
   
+  def release(self):
+    '''Releases all claims by this resource and all children'''
+    for req in self.requirements:
+      req.unclaim()
+    for child in self.goals:
+      child.release()
+  
   def handleReply(self, turtle, reply):
     print("Got a reply!")
     if turtle not in self.turtletoaction:
@@ -563,6 +570,9 @@ class Requirement(GoalComponent):
   def claim(self):
     raise NotImplementedError()
   
+  def unclaim(self):
+    raise NotImplementedError()
+  
   def isClaimed(self):
     return self.claimed
     
@@ -593,6 +603,10 @@ class VariableRequirement(Requirement):
       return True
     else:
       return False
+    
+  def unclaim(self):
+    assert self.isClaimed()
+    var = self.system.variables[self.variable]
     
 class PlotRequirement(Requirement):
   def __init__(self, name, size):
@@ -1272,6 +1286,7 @@ class GoalResolver:
       clone.name = name
       
     self.currentGoals.append(clone)
+    print(clone.name)
     self.resolveGoals()
   
   def addGoal(self, goal):

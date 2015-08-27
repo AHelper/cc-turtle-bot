@@ -37,8 +37,8 @@ run_rpc turtle/1/status '' success
 run_rpc turtle/1/getAction '' '203'
 
 echo Adding goal
-run_rpc goals/add '{"goal":"find new plot"}' success
-run_rpc goals '' 'active={find new plot'
+run_rpc goals/add '{"goal":"find new plot","name":"new"}' success
+run_rpc goals '' 'active={new'
 
 echo Running all goal actions
 run_rpc turtle/1/getAction '' 'action="explore"'
