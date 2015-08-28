@@ -18,13 +18,14 @@
 from ccturtle.sqlitestorageitem import SQLiteStorageItem
 
 class Building(SQLiteStorageItem):
-  def __init__(self, x, y, z, building_type, mk=1, id=None):
+  def __init__(self, x, y, z, building_type, mk=1, id=None, plotids=None):
     self.x = x
     self.y = y
     self.z = z
     self.building_type = building_type
     self.mk = mk
     self.id = id
+    self.plotids = plotids
     
   def sql(self):
     return (self.id, self.x, self.y, self.z, self.building_type, self.mk)

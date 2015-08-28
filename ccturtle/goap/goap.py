@@ -63,7 +63,7 @@ class Variables:
           wx = int(parts[1])
           wz = int(parts[2])
           i = (wx, wz)
-          v = PlotsVariable(self.sys, wx, wz)
+          v = PlotsVariable(self.sys, wx, wz, free_only=True)
           self.items[v.name] = v
           return v
         elif parts[0] == "buildings":
@@ -201,6 +201,15 @@ class System:
   
   def getSizedPlots(self):
     return self.sizedplotcache
+  
+  def isPlotClaimed(self, plot):
+    if plot.isclaimed():
+      return True
+    else:
+      for building in self.buildings:
+        if building.plotids:
+          if plot.id in building.plotids:
+            return True
     
   def addTurtle(self, turtle):
     self.sql.saveTurtle(turtle)
@@ -343,17 +352,25 @@ class TurtlesVariable(NumericVariable):
     return count
   
 class PlotsVariable(NumericVariable):
-  def __init__(self, sys, wx, wz):
+  def __init__(self, sys, wx, wz, free_only=False):
     assert isinstance(wx, int)
     assert isinstance(wz, int)
     assert isinstance(sys, System)
-    NumericVariable.__init__(self, "plots.{}.{}".format(wx, wz))
+    NumericVariable.__init__(self, ("plots.{}.{}" if free_only else "plots.{}.{}.free").format(wx, wz))
     self.size = (wx, wz)
     self.sys = sys
+    self.free_only = free_only
     
   def get(self):
     if self.size in self.sys.getSizedPlots():
-      return len(self.sys.getSizedPlots()[self.size])
+      if self.free_only:
+        count = 0
+        for plot in self.sys.getSizedPlots()[self.size]:
+          if not self.sys.isPlotClaimed(plot):
+            count += 1
+        return count
+      else:
+        return len(self.sys.getSizedPlots()[self.size])
     else:
       return 0
 
@@ -595,19 +612,6 @@ class VariableRequirement(Requirement):
       return False
     return var.doComparison(self.comparison, self.value)
     
-  def claim(self):
-    if self.variable in self.system.variables:
-      var = self.system.variables[self.variable]
-      var.set(var.get() - self.value.get())
-      self.claimed = True
-      return True
-    else:
-      return False
-    
-  def unclaim(self):
-    assert self.isClaimed()
-    var = self.system.variables[self.variable]
-    
 class PlotRequirement(Requirement):
   def __init__(self, name, size):
     Requirement.__init__(self, name=name)
@@ -669,6 +673,14 @@ class TurtleClaimRequirement(VariableRequirement):
           self.goal[key].append(turtle)
           return True
     return False
+  
+  def unclaim(self):
+    assert self.claimed
+    
+    self.goal["turtle"].remove(self.turtle)
+    self.system.unclaimTurtle(self.turtle)
+    self.turtle.goal = None
+    self.turtle = None
     
 class Action(GoalComponent):
   def __init__(self, name=""):
@@ -969,7 +981,7 @@ class GoalLoader:
       parts = m.groups()[0].split(",")
       if len(parts) == 1:
         parts.append(parts[0])
-      return self.resolver.system.variables["plots.{0}.{0}".format(parts[0], parts[1])]
+      return self.resolver.system.variables["plots.{0}.{0}.free".format(parts[0], parts[1])]
     m = re.match("turtle\((miner|builder|crafter|forrester|farmer)\)", varstr, re.IGNORECASE)
     if m:
       return self.resolver.system.variables["turtles.{}.free".format(m.groups()[0])]

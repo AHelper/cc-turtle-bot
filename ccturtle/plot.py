@@ -23,6 +23,7 @@ class Plot(SQLiteStorageItem):
     self.y = y
     self.z = z
     self.id = id
+    self.claimed = False # Temporary claiming
     
   def sql(self):
     return (self.id, self.x, self.y, self.z)
@@ -30,3 +31,15 @@ class Plot(SQLiteStorageItem):
   @staticmethod
   def args():
     return "id x y z".split(" ")
+  
+  def claim(self):
+    assert not self.claimed
+    self.claimed = True
+    
+  def unclaim(self):
+    assert self.claimed
+    self.claimed = False
+    
+  def isclaimed(self):
+    return self.claimed
+  
