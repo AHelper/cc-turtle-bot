@@ -1445,7 +1445,12 @@ class GoalResolver:
       # Maybe, redo the build?  Or maybe force a goal to be added?
       # A flatten goal would unclaim the current goal, decon what's built, then try
       # it again.
-      return goal.handleReply(turtle, response)
+      res = goal.handleReply(turtle, response)
+      if goal.isCompleted():
+        self.currentGoals.remove(goal)
+        del self.resolvingGoals[goal]
+        goal.release()
+      return res
         
   # More?
   # Maybe system shouldn't be passed in on creation of goals, actions, reqs, res.
