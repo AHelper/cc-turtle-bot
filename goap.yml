@@ -1,0 +1,31 @@
+requirement:
+  name: string, required
+  needs: string or list, required
+
+---
+
+result:
+  name: string, required
+  gets: string or list, required
+
+---
+
+action:
+  name: string, required
+  does: string, required
+    # Possible values:
+    # move: TODO
+    # flatten: TODO
+    # mine: Mines `count` number of blocks of type `block`
+    # explore: Wanders out for a total of `distance` blocks
+    # discover: TODO
+  vars: dict (see does for what these are)
+
+---
+
+goal:
+  name: string, required
+  needs: list of requirement names
+  does: list of action names
+  gets: list of result names
+   

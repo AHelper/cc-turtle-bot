@@ -1,0 +1,18 @@
+requirement:
+  name: miner
+  needs: turtle(builder)
+
+---
+
+action:
+  name: explore
+  does: explore
+  vars:
+    distance: 32
+
+---
+
+goal:
+  name: explore
+  needs: miner
+  does: explore

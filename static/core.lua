@@ -1,16 +1,16 @@
 --  cc-turtle-bot
 --  Copyright (C) 2015 Collin Eggert
---  
+--
 --  This program is free software: you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
 --  the Free Software Foundation, either version 3 of the License, or
 --  (at your option) any later version.
---  
+--
 --  This program is distributed in the hope that it will be useful,
 --  but WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 --  GNU General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License
 --  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -40,7 +40,7 @@ if h1 == nil then
   -- This is a new turtle!
   log.info("Attempting to register new turtle")
   local h2 = rest.api.turtle.register(config.id, 0, 0, 0, 0)
-  
+
   if h2 then
     log.info("New turtle "..config.id.." registered")
     m.save()
@@ -52,14 +52,35 @@ else
   m.load()
   -- Get pos from server
   local h2 = rest.api.turtle.position(config.id)
-  
-  if h2 ~= nil then    
+
+  if h2 ~= nil then
     if h2.x ~= m.x() or h2.y ~= m.y() or h2.z ~= m.z() or h2.facing ~= m.facing() then
       log.notice("Our position is newer than the server's")
       h2 = rest.api.turtle.position(config.id, m.x(), m.y(), m.z(), m.facing())
     end
   else
     log.error("Failed to get position")
+  end
+
+  -- Get an action
+  local action = rest.api.turtle.getAction(config.id)
+
+  if action ~= nil then
+    log.debug(textutils.serializeJSON(action))
+    log.info("Wants to perform action " .. action.action)
+    if actions.invoke(action.action, action.parameters) then
+      log.info("Action was OK")
+      rest.api.turtle.response(config.id, {
+        id = action.id,
+        type = "success"
+      })
+    else
+      log.warning("Action FAILED")
+      rest.api.turtle.response(config.id, {
+        id = action.id,
+        type = "failure"
+      })
+    end
   end
 end
 

@@ -2,17 +2,17 @@
 
 # cc-turtle-bot
 # Copyright (C) 2015 Collin Eggert
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -49,13 +49,13 @@ def createApp():
   resolver = GoalResolver()
   validator = RequestValidator()
   loader = GoalLoader(resolver)
-          
+
   settings = {
     'default_handler_class': ccturtle.server.json.JSONErrorHandler,
     'default_handler_args': dict(status_code=404),
     'debug': True
   }
-  
+
   init = {
     'sys': resolver.system,
     'resolver': resolver,
@@ -119,7 +119,7 @@ def createApp():
     },
     handlers.UnregisterTurtleHandler: {
     },
-    handlers.TurtleStatusHandler: { 
+    handlers.TurtleStatusHandler: {
     },
     handlers.ListingHandler: {
     },
@@ -151,20 +151,20 @@ def createApp():
     handlers.GoalsRemoveHandler: {
     }
   }, routes)
-    
-  loader.load(os.path.curdir + "/test.yml")
-  
+
+  loader.load(os.path.curdir + "/v1.yml")
+
   return (resolver, validator, tornado.web.Application(routes, **settings))
 
 def start():
   resolver, validator, app = createApp()
-  
+
   tornado.log.access_log.setLevel(logging.DEBUG)
   print(validator.dump())
-  
+
   port = 34299
   app.listen(port)
-  
+
   print("server listening on port {}".format(port))
   try:
     tornado.ioloop.IOLoop.instance().start()

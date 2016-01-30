@@ -1,6 +1,6 @@
 
 goal:
-  id: first-settlement
+  name: first-settlement
   requires:
     structures:
       1: mining
@@ -13,11 +13,11 @@ building:
   annotations:
     chest:
       pos: 7 7 1
-      
+
 ---
 
 goal:
-  id: unique string
+  name: unique string
   priority: number priority, lower is more important, must be >0
   requires:
     goals:
@@ -51,10 +51,10 @@ building:
     - list of variables|units this provides
   next: name of building upgrade name
   prev: name of building downgrade name
-  
+
 unit:
   id: unique string
-  
+
 ---
 
 building types:
@@ -86,3 +86,9 @@ position types:
   - position.crafter # Crafts things, stores output internally
   - position.storage # Turtle that inteligently stores items to retrieval
   - position.home # A possible home position that worker turtles can park at.  Not a fixed assignment, they just need to be available. Pathing could be a problem here.
+
+expression functions:
+  - turtle(type) - returns the number of free turtles of type. Type -> miner, builder, crafter, forrester, farmer
+  - true, 1, yes, on -> boolean True
+  - false, 0, no, off -> boolean False
+  - plot(x[,y]) - returns the number of free plots of size x, y. y will be set to x if omitted.
